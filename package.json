@@ -1,0 +1,34 @@
+{
+  "name": "space-models",
+  "version": "0.1.0",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/concord-consortium/space-models.git"
+  },
+  "keywords": [
+    "space",
+    "models",
+    "n-body",
+    "webgl",
+    "earth",
+    "sun",
+    "orbit"
+  ],
+  "author": "Piotr Janik <janikpiotrek@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/concord-consortium/space-models/issues"
+  },
+  "homepage": "https://github.com/concord-consortium/space-models",
+  "devDependencies": {
+    "babel-core": "^6.2.1",
+    "babel-loader": "^6.2.0",
+    "babel-preset-es2015": "^6.1.18",
+    "webpack": "^1.12.9"
+  },
+  "dependencies": {
+    "eventemitter2": "^0.4.14",
+    "iframe-phone": "^1.1.3"
+  }
+}
