@@ -10,21 +10,21 @@ export default class {
     let material = new THREE.LineBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.35});
 
     for (let i = -size; i <= size; i += step) {
-      geometry.vertices.push(new THREE.Vector3(-size, 0, i));
-      geometry.vertices.push(new THREE.Vector3(size, 0, i));
+      geometry.vertices.push(new THREE.Vector3(-size, i, 0));
+      geometry.vertices.push(new THREE.Vector3(size, i, 0));
 
-      geometry.vertices.push(new THREE.Vector3(i, 0, -size));
-      geometry.vertices.push(new THREE.Vector3(i, 0, size));
+      geometry.vertices.push(new THREE.Vector3(i, -size, 0));
+      geometry.vertices.push(new THREE.Vector3(i, size, 0));
 
     }
-    this._mesh = new THREE.LineSegments(geometry, material);
+    this.mesh = new THREE.LineSegments(geometry, material);
   }
 
   get rootObject() {
-    return this._mesh;
+    return this.mesh;
   }
 
   get position() {
-    return this._mesh.position;
+    return this.mesh.position;
   }
 }
