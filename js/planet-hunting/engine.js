@@ -1,7 +1,8 @@
 import {deepExtend} from './utils.js';
-import {updatePositions} from './physics.js';
+import {updatePlanetPos, updateStarPos} from './physics.js';
 
 export function tick(state) {
-  updatePositions(state.star, state.planet, state.timestep);
+  updatePlanetPos(state.star, state.planet, state.timestep);
+  updateStarPos(state.star, state.planet);
   state.time += state.timestep;
 }

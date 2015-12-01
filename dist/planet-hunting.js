@@ -100,8 +100,6 @@
 	  planet: {
 	    x: 1, // [ AU ]
 	    y: 0, // [ AU ]
-	    vx: 0, // [ AU / year ]
-	    vy: 0, // [ AU / year ]
 	    mass: 1 // [ earth mass ]
 	  },
 	  breadCrumbs: {
@@ -240,16 +238,22 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.updatePositions = updatePositions;
+	exports.updatePlanetPos = updatePlanetPos;
+	exports.updateStarPos = updateStarPos;
 	exports.setCircularVelocity = setCircularVelocity;
 	// The universal gravitational constant in AU, years, and earth-mass units.
 	var G = 0 - 2 * 5.922e-5;
 
 	// Integration:
 
-	function updatePositions(star, planet, timestep) {
+	function updatePlanetPos(star, planet, timestep) {
 	  leapFrog(star, planet, timestep);
-	  // or euler(star, planet, timestep);
+	}
+
+	function updateStarPos(star, planet) {
+	  var rho = 0 - planet.mass / star.mass;
+	  star.x = rho * planet.x;
+	  star.y = rho * planet.y;
 	}
 
 	// Helpers:
@@ -304,7 +308,8 @@
 	var _physics = __webpack_require__(3);
 
 	function tick(state) {
-	  (0, _physics.updatePositions)(state.star, state.planet, state.timestep);
+	  (0, _physics.updatePlanetPos)(state.star, state.planet, state.timestep);
+	  (0, _physics.updateStarPos)(state.star, state.planet);
 	  state.time += state.timestep;
 	}
 
@@ -1253,6 +1258,8 @@
 	      transparent: true
 	    });
 	    this.points = new THREE.Points(this.geometry, this.material);
+
+	    this.count = 0;
 	    this.idx = 0;
 	  }
 
@@ -1265,12 +1272,13 @@
 	      vertices.needsUpdate = true;
 
 	      var alphas = this.points.geometry.attributes.alpha;
-	      // [idx + 1] is the oldest breadcrumb, while [idx] is the youngest.
-	      for (var i = 1; i <= COUNT; i++) {
-	        alphas.array[(this.idx + i) % COUNT] = i / COUNT;
+	      for (var i = 0; i < this.count; i++) {
+	        var idx = this.idx - i > 0 ? this.idx - i : this.idx - i + COUNT;
+	        alphas.array[idx] = 1 - i / COUNT;
 	      }
 	      alphas.needsUpdate = true;
 
+	      this.count = Math.min(COUNT, this.count + 1);
 	      this.idx = (this.idx + 1) % COUNT;
 	    }
 	  }, {

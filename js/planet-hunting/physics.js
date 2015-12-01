@@ -3,9 +3,14 @@ const G = 0 - 2 * 5.922e-5;
 
 // Integration:
 
-export function updatePositions(star, planet, timestep) {
+export function updatePlanetPos(star, planet, timestep) {
   leapFrog(star, planet, timestep);
-  // or euler(star, planet, timestep);
+}
+
+export function updateStarPos(star, planet) {
+  let rho = 0 - planet.mass / star.mass;
+  star.x = rho * planet.x;
+  star.y = rho * planet.y;
 }
 
 // Helpers:

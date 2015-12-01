@@ -19,8 +19,6 @@ const DEF_STATE = {
   planet: {
     x: 1,   // [ AU ]
     y: 0,   // [ AU ]
-    vx: 0,  // [ AU / year ]
-    vy: 0,  // [ AU / year ]
     mass: 1 // [ earth mass ]
   },
   breadCrumbs: {

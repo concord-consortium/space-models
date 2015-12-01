@@ -16,6 +16,8 @@ export default class {
       transparent:    true
     });
     this.points = new THREE.Points(this.geometry, this.material);
+
+    this.count = 0;
     this.idx = 0;
   }
 
@@ -34,12 +36,13 @@ export default class {
     vertices.needsUpdate = true;
 
     let alphas = this.points.geometry.attributes.alpha;
-    // [idx + 1] is the oldest breadcrumb, while [idx] is the youngest.
-    for (let i = 1; i <= COUNT; i++) {
-      alphas.array[(this.idx + i) % COUNT] = i / COUNT;
+    for (let i = 0; i < this.count; i++) {
+      let idx = this.idx - i > 0 ? this.idx - i : this.idx - i + COUNT;
+      alphas.array[idx] = 1 - i / COUNT;
     }
     alphas.needsUpdate = true;
 
+    this.count = Math.min(COUNT, this.count + 1);
     this.idx = (this.idx + 1) % COUNT;
   }
 }
