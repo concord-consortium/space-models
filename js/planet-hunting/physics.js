@@ -1,19 +1,20 @@
 // The universal gravitational constant in AU, years, and earth-mass units.
 const G = 0 - 2 * 5.922e-5;
 
-// Integration:
+// The relative density compared to Earth.
+const ROCKY_PLANET_DENSITY = 1;
+// The relative density of Jupiter compared to Earth.
+const GAS_PLANET_DENSITY = 1 / 4.13;
 
 export function updatePlanetPos(star, planet, timestep) {
   leapFrog(star, planet, timestep);
 }
 
 export function updateStarPos(star, planet) {
-  let rho = 0 - planet.mass / star.mass;
+  let rho = 0 - planetMass(planet) / star.mass;
   star.x = rho * planet.x;
   star.y = rho * planet.y;
 }
-
-// Helpers:
 
 export function setCircularVelocity(planet) {
   let p = planet;
@@ -24,6 +25,10 @@ export function setCircularVelocity(planet) {
   p.vy = -v * Math.sin(a);
 }
 
+export function planetMass(planet) {
+  let density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
+  return density * Math.pow(planet.diameter, 3);
+}
 
 function euler(s, p, dt) {
   p.x += p.vx * dt * 0.5;

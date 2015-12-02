@@ -1,6 +1,21 @@
 import {SF, PLANET_RADIUS} from '../constants.js';
 
 const COUNT = 250;
+const VERTEX_SHADER = `
+  attribute float alpha;
+  varying float vAlpha;
+  void main() {
+    vAlpha = alpha;
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = 3.5;
+    gl_Position = projectionMatrix * mvPosition;
+  }`;
+const FRAGMENT_SHADER = `
+  uniform vec3 color;
+  varying float vAlpha;
+  void main() {
+    gl_FragColor = vec4(color, vAlpha);
+  }`;
 
 export default class {
   constructor() {
@@ -11,8 +26,8 @@ export default class {
       uniforms:       {
                         color: {type: 'c', value: new THREE.Color(0xdddddd)}
                       },
-      vertexShader:   vertexShader(10 * SF),
-      fragmentShader: fragmentShader(),
+      vertexShader:   VERTEX_SHADER,
+      fragmentShader: FRAGMENT_SHADER,
       transparent:    true
     });
     this.points = new THREE.Points(this.geometry, this.material);
@@ -37,7 +52,7 @@ export default class {
 
     let alphas = this.points.geometry.attributes.alpha;
     for (let i = 0; i < this.count; i++) {
-      let idx = this.idx - i > 0 ? this.idx - i : this.idx - i + COUNT;
+      let idx = this.idx - i >= 0 ? this.idx - i : this.idx - i + COUNT;
       alphas.array[idx] = 1 - i / COUNT;
     }
     alphas.needsUpdate = true;
@@ -45,25 +60,4 @@ export default class {
     this.count = Math.min(COUNT, this.count + 1);
     this.idx = (this.idx + 1) % COUNT;
   }
-}
-
-function vertexShader(pointSize) {
-  return `
-    attribute float alpha;
-    varying float vAlpha;
-    void main() {
-      vAlpha = alpha;
-      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = ${pointSize.toFixed(2)} / length(mvPosition.xyz);
-      gl_Position = projectionMatrix * mvPosition;
-    }`;
-}
-
-function fragmentShader() {
-  return `
-    uniform vec3 color;
-    varying float vAlpha;
-    void main() {
-      gl_FragColor = vec4(color, vAlpha);
-    }`;
 }

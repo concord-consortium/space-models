@@ -3,39 +3,36 @@ import Star from './view-models/star.js';
 import Planet from './view-models/planet.js';
 import Grid from './view-models/grid.js';
 import BreadCrumbs from './view-models/bread-crumbs.js';
-import {SF, PLANET_RADIUS} from './constants.js';
-
-const BREAD_CRUMBS_LIMIT = 10000;
+import Camera from './view-models/camera.js';
 
 export default class {
   constructor(parentEl) {
-    let width = parentEl.clientWidth;
-    let height = parentEl.clientHeight;
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(60, width / height, PLANET_RADIUS * SF / 100, PLANET_RADIUS * SF * 10000);
     this.renderer = webglAvailable() ? new THREE.WebGLRenderer({antialias: true})
                                      : new THREE.CanvasRenderer();
-    this.renderer.setSize(width, height);
     parentEl.appendChild(this.renderer.domElement);
 
-    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enablePan = false;
-    this.controls.minPolarAngle = Math.PI * 0.5;
-    this.controls.maxPolarAngle = Math.PI;
-    this.controls.minAzimuthAngle = 0;
-    this.controls.maxAzimuthAngle = 0;
-    this.controls.rotateSpeed = 0.5;
-    this.controls.zoomSpeed = 0.5;
+    this.camera = new Camera(this.renderer.domElement);
+    this.camera.controls.addEventListener('change', () => {
+      this.dispatch.emit('camera.change', this.camera.getProps());
+    });
 
     this.dispatch = new EventEmitter();
 
+    this.scene = new THREE.Scene();
     this._initScene();
-    this._setInitialCamPos();
+
+    this.resize();
   }
 
   setProps(props) {
     this.star.setProps(props.star);
     this.planet.setProps(props.planet);
+    this.camera.setProps(props.camera);
+    this.grid.setSize(gridSizeForCameraDist(props.camera.distance));
+  }
+
+  getCameraTilt() {
+    return this.camera.tilt;
   }
 
   addBreadCrumb(x, y) {
@@ -48,11 +45,11 @@ export default class {
   }
 
   render() {
-    this.controls.update();
+    this.camera.update();
     //if (this._interactionHandler) {
     //  this._interactionHandler.checkInteraction();
     //}
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera.camera);
   }
 
   // Resizes canvas to fill its parent.
@@ -60,9 +57,8 @@ export default class {
     let parent = this.renderer.domElement.parentElement;
     let newWidth = parent.clientWidth;
     let newHeight = parent.clientHeight;
-    this.camera.aspect = newWidth / newHeight;
-    this.camera.updateProjectionMatrix();
     this.renderer.setSize(newWidth, newHeight);
+    this.camera.setSize(newWidth, newHeight);
   }
 
   _initScene() {
@@ -75,13 +71,16 @@ export default class {
     this.scene.add(this.planet.rootObject);
     this.scene.add(this.breadCrumbs.rootObject);
     this.scene.add(new THREE.AmbientLight(0x202020));
-    this.scene.add(new THREE.PointLight(0xffffff, 1, 0));
   }
+}
 
-  _setInitialCamPos() {
-    this.camera.position.x = 0;
-    this.camera.position.y = 0;
-    this.camera.position.z = PLANET_RADIUS * SF * 50;
+function gridSizeForCameraDist(camDist) {
+  if (camDist < 8) {
+    return 2;
+  } else if (camDist < 64) {
+    return 8;
+  } else {
+    return 80;
   }
 }
 

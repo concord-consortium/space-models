@@ -10,6 +10,9 @@ export default class {
     this.mesh = new THREE.Mesh(geometry, this.material);
     this.posObject = new THREE.Object3D();
     this.posObject.add(this.mesh);
+
+    // Add point light too.
+    this.posObject.add(new THREE.PointLight(0xffffff, 1, 0))
   }
 
   get rootObject() {
