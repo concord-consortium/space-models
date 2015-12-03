@@ -1,3 +1,5 @@
+import {PLANET_RADIUS, STAR_RADIUS} from './constants.js';
+
 const DEG_2_RAD = Math.PI / 180;
 // The universal gravitational constant in AU, years, and earth-mass units.
 const G = 0 - 2 * 5.922e-5;
@@ -34,6 +36,30 @@ export function starCamVelocity(oldStar, star, camera, timestep) {
   return (newDist - oldDist) / timestep;
 }
 
+export function lightIntensity(star, planet, camera) {
+  if (occultation(star, planet, camera)) {
+    return 1 - Math.pow(planet.diameter / 100, 2);
+  }
+  return 1;
+}
+
+export function occultation(star, planet, camera) {
+  if (Math.abs(camera.tilt) > 0.1) {
+    return false;
+  }
+  if (camera.distance < distObj(planet, {x: 0, y: 0})) {
+    // Planet is behind the camera.
+    return false;
+  }
+  if (planet.y > 0) {
+    // Planet is behind the star.
+    return false;
+  }
+  // This assumes that camera position is limited to XZ plane (so Y is always == 0)
+  // and it always looks at (0, 0, 0) point.
+  return Math.abs(star.x - planet.x) < PLANET_RADIUS + STAR_RADIUS;
+}
+
 export function planetMass(planet) {
   let density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
   return density * Math.pow(planet.diameter, 3);
@@ -41,6 +67,11 @@ export function planetMass(planet) {
 
 function dist(x1, y1, z1, x2, y2, z2) {
   return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
+}
+
+function distObj(a, b) {
+  // Planet and star objects don't specify Z coord, as it's always equal to 0.
+  return dist(a.x, a.y, a.z || 0, b.x, b.y, b.z || 0);
 }
 
 function euler(s, p, dt) {

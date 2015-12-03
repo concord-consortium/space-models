@@ -29,7 +29,8 @@ const DEF_STATE = {
     tilt: 90,        // [ deg ], between 0 and 90
     distance: 2.5    // [ AU ]
   },
-  starCamVelocity: 0 // [ AU / year ]
+  starCamVelocity: 0, // [ AU / year ]
+  lightIntensity: 1   // 1 is default intensity without occultation
 };
 // Velocity will be set in such a way so that its orbit is circular.
 setCircularVelocity(DEF_STATE.planet);

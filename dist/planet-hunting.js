@@ -129,7 +129,8 @@
 	    tilt: 90, // [ deg ], between 0 and 90
 	    distance: 2.5 // [ AU ]
 	  },
-	  starCamVelocity: 0 // [ AU / year ]
+	  starCamVelocity: 0, // [ AU / year ]
+	  lightIntensity: 1 // 1 is default intensity without occultation
 	};
 	// Velocity will be set in such a way so that its orbit is circular.
 	(0, _physics.setCircularVelocity)(DEF_STATE.planet);
@@ -877,9 +878,9 @@
 
 /***/ },
 /* 4 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
@@ -888,7 +889,12 @@
 	exports.updateStarPos = updateStarPos;
 	exports.setCircularVelocity = setCircularVelocity;
 	exports.starCamVelocity = starCamVelocity;
+	exports.lightIntensity = lightIntensity;
+	exports.occultation = occultation;
 	exports.planetMass = planetMass;
+
+	var _constants = __webpack_require__(8);
+
 	var DEG_2_RAD = Math.PI / 180;
 	// The universal gravitational constant in AU, years, and earth-mass units.
 	var G = 0 - 2 * 5.922e-5;
@@ -925,6 +931,30 @@
 	  return (newDist - oldDist) / timestep;
 	}
 
+	function lightIntensity(star, planet, camera) {
+	  if (occultation(star, planet, camera)) {
+	    return 1 - Math.pow(planet.diameter / 100, 2);
+	  }
+	  return 1;
+	}
+
+	function occultation(star, planet, camera) {
+	  if (Math.abs(camera.tilt) > 0.1) {
+	    return false;
+	  }
+	  if (camera.distance < distObj(planet, { x: 0, y: 0 })) {
+	    // Planet is behind the camera.
+	    return false;
+	  }
+	  if (planet.y > 0) {
+	    // Planet is behind the star.
+	    return false;
+	  }
+	  // This assumes that camera position is limited to XZ plane (so Y is always == 0)
+	  // and it always looks at (0, 0, 0) point.
+	  return Math.abs(star.x - planet.x) < _constants.PLANET_RADIUS + _constants.STAR_RADIUS;
+	}
+
 	function planetMass(planet) {
 	  var density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
 	  return density * Math.pow(planet.diameter, 3);
@@ -932,6 +962,11 @@
 
 	function dist(x1, y1, z1, x2, y2, z2) {
 	  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
+	}
+
+	function distObj(a, b) {
+	  // Planet and star objects don't specify Z coord, as it's always equal to 0.
+	  return dist(a.x, a.y, a.z || 0, b.x, b.y, b.z || 0);
 	}
 
 	function euler(s, p, dt) {
@@ -975,11 +1010,14 @@
 	var _physics = __webpack_require__(4);
 
 	function tick(state) {
-	  var oldStarX = state.star.x;
-	  var oldStarY = state.star.y;
+	  var oldStar = { x: state.star.x, y: state.star.y };
+
 	  (0, _physics.updatePlanetPos)(state.star, state.planet, state.timestep);
 	  (0, _physics.updateStarPos)(state.star, state.planet);
-	  state.starCamVelocity = (0, _physics.starCamVelocity)({ x: oldStarX, y: oldStarY }, state.star, state.camera, state.timestep);
+
+	  state.starCamVelocity = (0, _physics.starCamVelocity)(oldStar, state.star, state.camera, state.timestep);
+	  state.lightIntensity = (0, _physics.lightIntensity)(state.star, state.planet, state.camera);
+
 	  state.time += state.timestep;
 	}
 
@@ -1203,7 +1241,7 @@
 	  value: true
 	});
 	// Default unit: AU
-	var SF = exports.SF = 1000; // scale factor
+	var SF = exports.SF = 1000; // scale factor, conversion between model and view units
 	var STAR_RADIUS = exports.STAR_RADIUS = 0.1;
 	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05;
 
@@ -1473,6 +1511,7 @@
 	  outputs['planet.mass'] = (0, _physics.planetMass)(state.planet);
 	  outputs['camera.tilt'] = state.camera.tilt;
 	  outputs['starCamVelocity'] = state.starCamVelocity;
+	  outputs['lightIntensity'] = state.lightIntensity;
 	  return outputs;
 	}
 

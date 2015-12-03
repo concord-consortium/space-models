@@ -1,11 +1,14 @@
 import {deepExtend} from './utils.js';
-import {updatePlanetPos, updateStarPos, starCamVelocity} from './physics.js';
+import {updatePlanetPos, updateStarPos, starCamVelocity, lightIntensity} from './physics.js';
 
 export function tick(state) {
-  let oldStarX = state.star.x;
-  let oldStarY = state.star.y;
+  let oldStar = {x: state.star.x, y: state.star.y};
+
   updatePlanetPos(state.star, state.planet, state.timestep);
   updateStarPos(state.star, state.planet);
-  state.starCamVelocity = starCamVelocity({x: oldStarX, y: oldStarY}, state.star, state.camera, state.timestep);
+
+  state.starCamVelocity = starCamVelocity(oldStar, state.star, state.camera, state.timestep);
+  state.lightIntensity = lightIntensity(state.star, state.planet, state.camera);
+
   state.time += state.timestep;
 }
