@@ -1,6 +1,6 @@
+const DEG_2_RAD = Math.PI / 180;
 // The universal gravitational constant in AU, years, and earth-mass units.
 const G = 0 - 2 * 5.922e-5;
-
 // The relative density compared to Earth.
 const ROCKY_PLANET_DENSITY = 1;
 // The relative density of Jupiter compared to Earth.
@@ -11,7 +11,7 @@ export function updatePlanetPos(star, planet, timestep) {
 }
 
 export function updateStarPos(star, planet) {
-  let rho = 0 - planetMass(planet) / star.mass;
+  let rho = -planetMass(planet) / star.mass;
   star.x = rho * planet.x;
   star.y = rho * planet.y;
 }
@@ -25,9 +25,22 @@ export function setCircularVelocity(planet) {
   p.vy = -v * Math.sin(a);
 }
 
+export function starCamVelocity(oldStar, star, camera, timestep) {
+  let cameraX = 0;
+  let cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
+  let cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
+  let oldDist = dist(oldStar.x, oldStar.y, 0, cameraX, cameraY, cameraZ);
+  let newDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
+  return (newDist - oldDist) / timestep;
+}
+
 export function planetMass(planet) {
   let density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
   return density * Math.pow(planet.diameter, 3);
+}
+
+function dist(x1, y1, z1, x2, y2, z2) {
+  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
 }
 
 function euler(s, p, dt) {

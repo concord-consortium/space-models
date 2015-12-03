@@ -18,15 +18,18 @@ const DEF_STATE = {
     mass: SUN_MASS / EARTH_MASS // [ earth mass ]
   },
   planet: {
-    x: 1,          // [ AU ]
-    y: 0,          // [ AU ]
-    diameter: 1,   // [ earth diameter ]
+    x: 1,            // [ AU ]
+    y: 0,            // [ AU ]
+    vx: 'fakeValue', // [ AU / year ] - velocity will be calculated dynamically later!
+    vy: 'fakeValue', // [ AU / year ]   See #setCircularVelocity call below.
+    diameter: 1,     // [ earth diameter ]
     rocky:    true
   },
   camera: {
-    tilt: 90,      // [ deg ], between 0 and 90
-    distance: 2.5  // [ AU ]
-  }
+    tilt: 90,        // [ deg ], between 0 and 90
+    distance: 2.5    // [ AU ]
+  },
+  starCamVelocity: 0 // [ AU / year ]
 };
 // Velocity will be set in such a way so that its orbit is circular.
 setCircularVelocity(DEF_STATE.planet);

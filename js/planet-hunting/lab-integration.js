@@ -43,7 +43,9 @@ export default function(app) {
 
 function getOutputs(state) {
   let outputs = {};
+  outputs['time'] = state.time;
   outputs['planet.mass'] = planetMass(state.planet);
   outputs['camera.tilt'] = state.camera.tilt;
+  outputs['starCamVelocity'] = state.starCamVelocity;
   return outputs;
 }

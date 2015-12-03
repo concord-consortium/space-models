@@ -120,13 +120,16 @@
 	  planet: {
 	    x: 1, // [ AU ]
 	    y: 0, // [ AU ]
+	    vx: 'fakeValue', // [ AU / year ] - velocity will be calculated dynamically later!
+	    vy: 'fakeValue', // [ AU / year ]   See #setCircularVelocity call below.
 	    diameter: 1, // [ earth diameter ]
 	    rocky: true
 	  },
 	  camera: {
 	    tilt: 90, // [ deg ], between 0 and 90
 	    distance: 2.5 // [ AU ]
-	  }
+	  },
+	  starCamVelocity: 0 // [ AU / year ]
 	};
 	// Velocity will be set in such a way so that its orbit is circular.
 	(0, _physics.setCircularVelocity)(DEF_STATE.planet);
@@ -884,10 +887,11 @@
 	exports.updatePlanetPos = updatePlanetPos;
 	exports.updateStarPos = updateStarPos;
 	exports.setCircularVelocity = setCircularVelocity;
+	exports.starCamVelocity = starCamVelocity;
 	exports.planetMass = planetMass;
+	var DEG_2_RAD = Math.PI / 180;
 	// The universal gravitational constant in AU, years, and earth-mass units.
 	var G = 0 - 2 * 5.922e-5;
-
 	// The relative density compared to Earth.
 	var ROCKY_PLANET_DENSITY = 1;
 	// The relative density of Jupiter compared to Earth.
@@ -898,7 +902,7 @@
 	}
 
 	function updateStarPos(star, planet) {
-	  var rho = 0 - planetMass(planet) / star.mass;
+	  var rho = -planetMass(planet) / star.mass;
 	  star.x = rho * planet.x;
 	  star.y = rho * planet.y;
 	}
@@ -912,9 +916,22 @@
 	  p.vy = -v * Math.sin(a);
 	}
 
+	function starCamVelocity(oldStar, star, camera, timestep) {
+	  var cameraX = 0;
+	  var cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
+	  var cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
+	  var oldDist = dist(oldStar.x, oldStar.y, 0, cameraX, cameraY, cameraZ);
+	  var newDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
+	  return (newDist - oldDist) / timestep;
+	}
+
 	function planetMass(planet) {
 	  var density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
 	  return density * Math.pow(planet.diameter, 3);
+	}
+
+	function dist(x1, y1, z1, x2, y2, z2) {
+	  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
 	}
 
 	function euler(s, p, dt) {
@@ -958,8 +975,11 @@
 	var _physics = __webpack_require__(4);
 
 	function tick(state) {
+	  var oldStarX = state.star.x;
+	  var oldStarY = state.star.y;
 	  (0, _physics.updatePlanetPos)(state.star, state.planet, state.timestep);
 	  (0, _physics.updateStarPos)(state.star, state.planet);
+	  state.starCamVelocity = (0, _physics.starCamVelocity)({ x: oldStarX, y: oldStarY }, state.star, state.camera, state.timestep);
 	  state.time += state.timestep;
 	}
 
@@ -1449,8 +1469,10 @@
 
 	function getOutputs(state) {
 	  var outputs = {};
+	  outputs['time'] = state.time;
 	  outputs['planet.mass'] = (0, _physics.planetMass)(state.planet);
 	  outputs['camera.tilt'] = state.camera.tilt;
+	  outputs['starCamVelocity'] = state.starCamVelocity;
 	  return outputs;
 	}
 
