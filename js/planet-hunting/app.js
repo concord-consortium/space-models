@@ -31,8 +31,11 @@ const DEF_STATE = {
     tilt: 90,        // [ deg ], between 0 and 90
     distance: 2.5    // [ AU ]
   },
-  starCamVelocity: 'output', // [ AU / year ]
-  lightIntensity: 'output'   // [0..1], 1 is default intensity without occultation
+  telescope: {
+    precision: 100,            // [0..100], affects starCamVelocity and lightIntensity
+    starCamVelocity: 'output', // [ AU / year ]
+    lightIntensity: 'output'   // [0..1], 1 is default intensity without occultation
+  }
 };
 // Velocity will be set in such a way so that its orbit is circular.
 setCircularVelocity(DEF_STATE.planet);

@@ -131,8 +131,11 @@
 	    tilt: 90, // [ deg ], between 0 and 90
 	    distance: 2.5 // [ AU ]
 	  },
-	  starCamVelocity: 'output', // [ AU / year ]
-	  lightIntensity: 'output' // [0..1], 1 is default intensity without occultation
+	  telescope: {
+	    precision: 100, // [0..100], affects starCamVelocity and lightIntensity
+	    starCamVelocity: 'output', // [ AU / year ]
+	    lightIntensity: 'output' // [0..1], 1 is default intensity without occultation
+	  }
 	};
 	// Velocity will be set in such a way so that its orbit is circular.
 	(0, _physics.setCircularVelocity)(DEF_STATE.planet);
@@ -890,6 +893,7 @@
 	});
 	exports.updatePlanet = updatePlanet;
 	exports.updateStar = updateStar;
+	exports.updateTelescope = updateTelescope;
 	exports.setCircularVelocity = setCircularVelocity;
 	exports.starCamVelocity = starCamVelocity;
 	exports.lightIntensity = lightIntensity;
@@ -916,6 +920,17 @@
 	  star.y = rho * planet.y;
 	  star.vx = rho * planet.vx;
 	  star.vy = rho * planet.vy;
+	}
+
+	function updateTelescope(telescope, star, planet, camera, timestep) {
+	  telescope.starCamVelocity = starCamVelocity(star, camera, timestep);
+	  telescope.lightIntensity = lightIntensity(star, planet, camera);
+
+	  if (telescope.precision < 100) {
+	    // Add random noise.
+	    telescope.starCamVelocity += 0.15 * (Math.random() * 2 - 1) / telescope.precision;
+	    telescope.lightIntensity += 0.3 * -Math.random() / telescope.precision;
+	  }
 	}
 
 	function setCircularVelocity(planet) {
@@ -1027,8 +1042,7 @@
 	function calculateOutputs(state) {
 	  // Note that star position and velocity depends strictly on planet, so it's an output in fact.
 	  (0, _physics.updateStar)(state.star, state.planet);
-	  state.starCamVelocity = (0, _physics.starCamVelocity)(state.star, state.camera, state.timestep);
-	  state.lightIntensity = (0, _physics.lightIntensity)(state.star, state.planet, state.camera);
+	  (0, _physics.updateTelescope)(state.telescope, state.star, state.planet, state.camera, state.timestep);
 	}
 
 /***/ },
@@ -1520,8 +1534,8 @@
 	  outputs['time'] = state.time;
 	  outputs['planet.mass'] = (0, _physics.planetMass)(state.planet);
 	  outputs['camera.tilt'] = state.camera.tilt;
-	  outputs['starCamVelocity'] = state.starCamVelocity;
-	  outputs['lightIntensity'] = state.lightIntensity;
+	  outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
+	  outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
 	  return outputs;
 	}
 

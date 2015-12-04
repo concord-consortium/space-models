@@ -20,6 +20,17 @@ export function updateStar(star, planet) {
   star.vy = rho * planet.vy;
 }
 
+export function updateTelescope(telescope, star, planet, camera, timestep) {
+  telescope.starCamVelocity = starCamVelocity(star, camera, timestep);
+  telescope.lightIntensity = lightIntensity(star, planet, camera);
+
+  if (telescope.precision < 100) {
+    // Add random noise.
+    telescope.starCamVelocity += 0.15 * (Math.random() * 2 - 1) / telescope.precision;
+    telescope.lightIntensity += 0.3 * -Math.random() / telescope.precision;
+  }
+}
+
 export function setCircularVelocity(planet) {
   let p = planet;
   let a = Math.atan2(p.x, p.y);

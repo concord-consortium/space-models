@@ -46,7 +46,7 @@ function getOutputs(state) {
   outputs['time'] = state.time;
   outputs['planet.mass'] = planetMass(state.planet);
   outputs['camera.tilt'] = state.camera.tilt;
-  outputs['starCamVelocity'] = state.starCamVelocity;
-  outputs['lightIntensity'] = state.lightIntensity;
+  outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
+  outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
   return outputs;
 }
