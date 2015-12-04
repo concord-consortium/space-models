@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter2';
 import {deepExtend} from './utils.js';
-import {setCircularVelocity} from './physics.js';
+import {makeCircularOrbit} from './physics.js';
 import * as engine from './engine.js';
 import View from './view.js';
 
@@ -38,7 +38,7 @@ const DEF_STATE = {
   }
 };
 // Velocity will be set in such a way so that its orbit is circular.
-setCircularVelocity(DEF_STATE.planet);
+makeCircularOrbit(DEF_STATE.planet);
 
 export default class {
   constructor(parentEl) {
@@ -80,6 +80,11 @@ export default class {
 
   setState(newState) {
     deepExtend(this.state, newState);
+    this._emitStateChange();
+  }
+
+  makeCircularOrbit() {
+    makeCircularOrbit(this.state.planet);
     this._emitStateChange();
   }
 

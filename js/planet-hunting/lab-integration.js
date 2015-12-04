@@ -35,6 +35,9 @@ export default function(app) {
     state[names[0]] = content.value;
     app.setState(stateObj);
   });
+  phone.addListener('makeCircularOrbit', function () {
+    app.makeCircularOrbit();
+  });
 
   phone.initialize();
 

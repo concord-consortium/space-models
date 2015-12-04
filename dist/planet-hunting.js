@@ -50,7 +50,7 @@
 
 	var _app2 = _interopRequireDefault(_app);
 
-	var _labIntegration = __webpack_require__(12);
+	var _labIntegration = __webpack_require__(13);
 
 	var _labIntegration2 = _interopRequireDefault(_labIntegration);
 
@@ -90,11 +90,11 @@
 
 	var _physics = __webpack_require__(4);
 
-	var _engine = __webpack_require__(5);
+	var _engine = __webpack_require__(6);
 
 	var engine = _interopRequireWildcard(_engine);
 
-	var _view = __webpack_require__(6);
+	var _view = __webpack_require__(7);
 
 	var _view2 = _interopRequireDefault(_view);
 
@@ -138,7 +138,7 @@
 	  }
 	};
 	// Velocity will be set in such a way so that its orbit is circular.
-	(0, _physics.setCircularVelocity)(DEF_STATE.planet);
+	(0, _physics.makeCircularOrbit)(DEF_STATE.planet);
 
 	var _class = (function () {
 	  function _class(parentEl) {
@@ -190,6 +190,12 @@
 	    key: 'setState',
 	    value: function setState(newState) {
 	      (0, _utils.deepExtend)(this.state, newState);
+	      this._emitStateChange();
+	    }
+	  }, {
+	    key: 'makeCircularOrbit',
+	    value: function makeCircularOrbit() {
+	      (0, _physics.makeCircularOrbit)(this.state.planet);
 	      this._emitStateChange();
 	    }
 	  }, {
@@ -894,13 +900,13 @@
 	exports.updatePlanet = updatePlanet;
 	exports.updateStar = updateStar;
 	exports.updateTelescope = updateTelescope;
-	exports.setCircularVelocity = setCircularVelocity;
+	exports.makeCircularOrbit = makeCircularOrbit;
 	exports.starCamVelocity = starCamVelocity;
 	exports.lightIntensity = lightIntensity;
 	exports.occultation = occultation;
 	exports.planetMass = planetMass;
 
-	var _constants = __webpack_require__(8);
+	var _constants = __webpack_require__(5);
 
 	var DEG_2_RAD = Math.PI / 180;
 	// The universal gravitational constant in AU, years, and earth-mass units.
@@ -933,7 +939,7 @@
 	  }
 	}
 
-	function setCircularVelocity(planet) {
+	function makeCircularOrbit(planet) {
 	  var p = planet;
 	  var a = Math.atan2(p.x, p.y);
 	  var d = Math.sqrt(p.x * p.x + p.y * p.y);
@@ -1018,6 +1024,20 @@
 
 /***/ },
 /* 5 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	// Default unit: AU
+	var SF = exports.SF = 1000; // scale factor, conversion between model and view units
+	var STAR_RADIUS = exports.STAR_RADIUS = 0.1;
+	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05;
+
+/***/ },
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1046,7 +1066,7 @@
 	}
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1061,7 +1081,7 @@
 
 	var _eventemitter2 = _interopRequireDefault(_eventemitter);
 
-	var _star = __webpack_require__(7);
+	var _star = __webpack_require__(8);
 
 	var _star2 = _interopRequireDefault(_star);
 
@@ -1077,7 +1097,7 @@
 
 	var _breadCrumbs2 = _interopRequireDefault(_breadCrumbs);
 
-	var _camera = __webpack_require__(18);
+	var _camera = __webpack_require__(12);
 
 	var _camera2 = _interopRequireDefault(_camera);
 
@@ -1194,7 +1214,7 @@
 	}
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1205,7 +1225,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(8);
+	var _constants = __webpack_require__(5);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1256,20 +1276,6 @@
 	exports.default = _class;
 
 /***/ },
-/* 8 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	// Default unit: AU
-	var SF = exports.SF = 1000; // scale factor, conversion between model and view units
-	var STAR_RADIUS = exports.STAR_RADIUS = 0.1;
-	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05;
-
-/***/ },
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -1281,7 +1287,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(8);
+	var _constants = __webpack_require__(5);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1340,7 +1346,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(8);
+	var _constants = __webpack_require__(5);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1406,7 +1412,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(8);
+	var _constants = __webpack_require__(5);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1476,6 +1482,101 @@
 
 	'use strict';
 
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _constants = __webpack_require__(5);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var ROTATION_AXIS = new THREE.Vector3(1, 0, 0);
+	var ZERO_TILT_VEC = new THREE.Vector3(0, -1, 0);
+
+	var _class = (function () {
+	  function _class(canvas) {
+	    _classCallCheck(this, _class);
+
+	    this.camera = new THREE.PerspectiveCamera(60, 1, 0.1 * _constants.SF, 1000 * _constants.SF);
+	    this.position.z = 2.5 * _constants.SF;
+
+	    this.controls = new THREE.OrbitControls(this.camera, canvas);
+	    this.controls.enablePan = false;
+	    this.controls.minPolarAngle = Math.PI * 0.5;
+	    this.controls.maxPolarAngle = Math.PI;
+	    this.controls.minAzimuthAngle = 0;
+	    this.controls.maxAzimuthAngle = 0;
+	    this.controls.rotateSpeed = 0.5;
+	    this.controls.zoomSpeed = 0.3;
+
+	    this.oldProps = {};
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setProps',
+	    value: function setProps(props) {
+	      if (this.oldProps.tilt !== props.tilt) {
+	        var angleDiff = this.position.angleTo(ZERO_TILT_VEC);
+	        var tiltInRad = props.tilt * Math.PI / 180;
+	        this.position.applyAxisAngle(ROTATION_AXIS, angleDiff - tiltInRad);
+	        this.controls.update();
+	        this.oldProps.tilt = props.tilt;
+	      }
+	      if (this.oldProps.distance !== props.distance) {
+	        this.position.setLength(props.distance * _constants.SF);
+	        this.oldProps.distance = props.distance;
+	      }
+	    }
+	  }, {
+	    key: 'getProps',
+	    value: function getProps() {
+	      var props = {};
+	      props.tilt = this.position.angleTo(ZERO_TILT_VEC) * 180 / Math.PI;
+	      props.distance = this.position.length() / _constants.SF;
+	      return props;
+	    }
+
+	    // Tilt is defined in degrees and it has a bit different range than control's polar angle
+	    // (from 0 to 90, while the polar angle is between PI/2 and PI).
+
+	  }, {
+	    key: 'setTilt',
+	    value: function setTilt(tiltInDeg) {
+	      var newPolarAngle = (180 - tiltInDeg) * Math.PI / 180;
+	      var polarAngleDiff = newPolarAngle - this.controls.getPolarAngle();
+	      this.controls.constraint.rotateUp(polarAngleDiff);
+	    }
+	  }, {
+	    key: 'setSize',
+	    value: function setSize(newWidth, newHeight) {
+	      this.camera.aspect = newWidth / newHeight;
+	      this.camera.updateProjectionMatrix();
+	    }
+	  }, {
+	    key: 'update',
+	    value: function update() {
+	      this.controls.update();
+	    }
+	  }, {
+	    key: 'position',
+	    get: function get() {
+	      return this.camera.position;
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
@@ -1513,6 +1614,9 @@
 	    state[names[0]] = content.value;
 	    app.setState(stateObj);
 	  });
+	  phone.addListener('makeCircularOrbit', function () {
+	    app.makeCircularOrbit();
+	  });
 
 	  phone.initialize();
 
@@ -1521,7 +1625,7 @@
 
 	var _utils = __webpack_require__(3);
 
-	var _iframePhone = __webpack_require__(13);
+	var _iframePhone = __webpack_require__(14);
 
 	var _iframePhone2 = _interopRequireDefault(_iframePhone);
 
@@ -1540,32 +1644,32 @@
 	}
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
 	  /**
 	   * Allows to communicate with an iframe.
 	   */
-	  ParentEndpoint:  __webpack_require__(14),
+	  ParentEndpoint:  __webpack_require__(15),
 	  /**
 	   * Allows to communicate with a parent page.
 	   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
 	   */
-	  getIFrameEndpoint: __webpack_require__(16),
-	  structuredClone: __webpack_require__(15),
+	  getIFrameEndpoint: __webpack_require__(17),
+	  structuredClone: __webpack_require__(16),
 
 	  // TODO: May be misnamed
-	  IframePhoneRpcEndpoint: __webpack_require__(17)
+	  IframePhoneRpcEndpoint: __webpack_require__(18)
 
 	};
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var structuredClone = __webpack_require__(15);
+	var structuredClone = __webpack_require__(16);
 
 	/**
 	  Call as:
@@ -1739,7 +1843,7 @@
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports) {
 
 	var featureSupported = false;
@@ -1781,10 +1885,10 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var structuredClone = __webpack_require__(15);
+	var structuredClone = __webpack_require__(16);
 	var HELLO_INTERVAL_LENGTH = 200;
 	var HELLO_TIMEOUT_LENGTH = 60000;
 
@@ -1934,13 +2038,13 @@
 	};
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var ParentEndpoint = __webpack_require__(14);
-	var getIFrameEndpoint = __webpack_require__(16);
+	var ParentEndpoint = __webpack_require__(15);
+	var getIFrameEndpoint = __webpack_require__(17);
 
 	// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
 	// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
@@ -2028,101 +2132,6 @@
 	    this.disconnect = disconnect.bind(this);
 	};
 
-
-/***/ },
-/* 18 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(8);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var ROTATION_AXIS = new THREE.Vector3(1, 0, 0);
-	var ZERO_TILT_VEC = new THREE.Vector3(0, -1, 0);
-
-	var _class = (function () {
-	  function _class(canvas) {
-	    _classCallCheck(this, _class);
-
-	    this.camera = new THREE.PerspectiveCamera(60, 1, 0.1 * _constants.SF, 1000 * _constants.SF);
-	    this.position.z = 2.5 * _constants.SF;
-
-	    this.controls = new THREE.OrbitControls(this.camera, canvas);
-	    this.controls.enablePan = false;
-	    this.controls.minPolarAngle = Math.PI * 0.5;
-	    this.controls.maxPolarAngle = Math.PI;
-	    this.controls.minAzimuthAngle = 0;
-	    this.controls.maxAzimuthAngle = 0;
-	    this.controls.rotateSpeed = 0.5;
-	    this.controls.zoomSpeed = 0.3;
-
-	    this.oldProps = {};
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      if (this.oldProps.tilt !== props.tilt) {
-	        var angleDiff = this.position.angleTo(ZERO_TILT_VEC);
-	        var tiltInRad = props.tilt * Math.PI / 180;
-	        this.position.applyAxisAngle(ROTATION_AXIS, angleDiff - tiltInRad);
-	        this.controls.update();
-	        this.oldProps.tilt = props.tilt;
-	      }
-	      if (this.oldProps.distance !== props.distance) {
-	        this.position.setLength(props.distance * _constants.SF);
-	        this.oldProps.distance = props.distance;
-	      }
-	    }
-	  }, {
-	    key: 'getProps',
-	    value: function getProps() {
-	      var props = {};
-	      props.tilt = this.position.angleTo(ZERO_TILT_VEC) * 180 / Math.PI;
-	      props.distance = this.position.length() / _constants.SF;
-	      return props;
-	    }
-
-	    // Tilt is defined in degrees and it has a bit different range than control's polar angle
-	    // (from 0 to 90, while the polar angle is between PI/2 and PI).
-
-	  }, {
-	    key: 'setTilt',
-	    value: function setTilt(tiltInDeg) {
-	      var newPolarAngle = (180 - tiltInDeg) * Math.PI / 180;
-	      var polarAngleDiff = newPolarAngle - this.controls.getPolarAngle();
-	      this.controls.constraint.rotateUp(polarAngleDiff);
-	    }
-	  }, {
-	    key: 'setSize',
-	    value: function setSize(newWidth, newHeight) {
-	      this.camera.aspect = newWidth / newHeight;
-	      this.camera.updateProjectionMatrix();
-	    }
-	  }, {
-	    key: 'update',
-	    value: function update() {
-	      this.controls.update();
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.camera.position;
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
 
 /***/ }
 /******/ ]);

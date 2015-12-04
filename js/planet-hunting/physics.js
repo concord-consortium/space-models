@@ -31,7 +31,7 @@ export function updateTelescope(telescope, star, planet, camera, timestep) {
   }
 }
 
-export function setCircularVelocity(planet) {
+export function makeCircularOrbit(planet) {
   let p = planet;
   let a = Math.atan2(p.x, p.y);
   let d = Math.sqrt(p.x * p.x + p.y * p.y);
