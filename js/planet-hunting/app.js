@@ -13,8 +13,10 @@ const DEF_STATE = {
   time: 0,                      // [ year ]
   timestep: 0.001,              // [ year ]
   star: {
-    x: 0,                       // [ AU ]
-    y: 0,                       // [ AU ]
+    x: 'output',                // [ AU ]
+    y: 'output',                // [ AU ]
+    vx: 'output',               // [ AU / year ]
+    vy: 'output',               // [ AU / year ]
     mass: SUN_MASS / EARTH_MASS // [ earth mass ]
   },
   planet: {
@@ -29,8 +31,8 @@ const DEF_STATE = {
     tilt: 90,        // [ deg ], between 0 and 90
     distance: 2.5    // [ AU ]
   },
-  starCamVelocity: 0, // [ AU / year ]
-  lightIntensity: 1   // 1 is default intensity without occultation
+  starCamVelocity: 'output', // [ AU / year ]
+  lightIntensity: 'output'   // [0..1], 1 is default intensity without occultation
 };
 // Velocity will be set in such a way so that its orbit is circular.
 setCircularVelocity(DEF_STATE.planet);
@@ -38,6 +40,7 @@ setCircularVelocity(DEF_STATE.planet);
 export default class {
   constructor(parentEl) {
     this.state = deepExtend({}, DEF_STATE);
+    engine.calculateOutputs(this.state);
 
     this.view = new View(parentEl);
     this.view.on('camera.change', (cameraState) => {

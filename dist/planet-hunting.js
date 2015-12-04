@@ -113,8 +113,10 @@
 	  time: 0, // [ year ]
 	  timestep: 0.001, // [ year ]
 	  star: {
-	    x: 0, // [ AU ]
-	    y: 0, // [ AU ]
+	    x: 'output', // [ AU ]
+	    y: 'output', // [ AU ]
+	    vx: 'output', // [ AU / year ]
+	    vy: 'output', // [ AU / year ]
 	    mass: SUN_MASS / EARTH_MASS // [ earth mass ]
 	  },
 	  planet: {
@@ -129,8 +131,8 @@
 	    tilt: 90, // [ deg ], between 0 and 90
 	    distance: 2.5 // [ AU ]
 	  },
-	  starCamVelocity: 0, // [ AU / year ]
-	  lightIntensity: 1 // 1 is default intensity without occultation
+	  starCamVelocity: 'output', // [ AU / year ]
+	  lightIntensity: 'output' // [0..1], 1 is default intensity without occultation
 	};
 	// Velocity will be set in such a way so that its orbit is circular.
 	(0, _physics.setCircularVelocity)(DEF_STATE.planet);
@@ -142,6 +144,7 @@
 	    _classCallCheck(this, _class);
 
 	    this.state = (0, _utils.deepExtend)({}, DEF_STATE);
+	    engine.calculateOutputs(this.state);
 
 	    this.view = new _view2.default(parentEl);
 	    this.view.on('camera.change', function (cameraState) {
@@ -885,8 +888,8 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.updatePlanetPos = updatePlanetPos;
-	exports.updateStarPos = updateStarPos;
+	exports.updatePlanet = updatePlanet;
+	exports.updateStar = updateStar;
 	exports.setCircularVelocity = setCircularVelocity;
 	exports.starCamVelocity = starCamVelocity;
 	exports.lightIntensity = lightIntensity;
@@ -903,14 +906,16 @@
 	// The relative density of Jupiter compared to Earth.
 	var GAS_PLANET_DENSITY = 1 / 4.13;
 
-	function updatePlanetPos(star, planet, timestep) {
+	function updatePlanet(star, planet, timestep) {
 	  leapFrog(star, planet, timestep);
 	}
 
-	function updateStarPos(star, planet) {
+	function updateStar(star, planet) {
 	  var rho = -planetMass(planet) / star.mass;
 	  star.x = rho * planet.x;
 	  star.y = rho * planet.y;
+	  star.vx = rho * planet.vx;
+	  star.vy = rho * planet.vy;
 	}
 
 	function setCircularVelocity(planet) {
@@ -922,12 +927,14 @@
 	  p.vy = -v * Math.sin(a);
 	}
 
-	function starCamVelocity(oldStar, star, camera, timestep) {
+	function starCamVelocity(star, camera, timestep) {
 	  var cameraX = 0;
 	  var cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
 	  var cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
-	  var oldDist = dist(oldStar.x, oldStar.y, 0, cameraX, cameraY, cameraZ);
-	  var newDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
+	  var newStarX = star.x + star.vx * timestep;
+	  var newStarY = star.y + star.vy * timestep;
+	  var oldDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
+	  var newDist = dist(newStarX, newStarY, 0, cameraX, cameraY, cameraZ);
 	  return (newDist - oldDist) / timestep;
 	}
 
@@ -1004,21 +1011,24 @@
 	  value: true
 	});
 	exports.tick = tick;
+	exports.calculateOutputs = calculateOutputs;
 
 	var _utils = __webpack_require__(3);
 
 	var _physics = __webpack_require__(4);
 
 	function tick(state) {
-	  var oldStar = { x: state.star.x, y: state.star.y };
-
-	  (0, _physics.updatePlanetPos)(state.star, state.planet, state.timestep);
-	  (0, _physics.updateStarPos)(state.star, state.planet);
-
-	  state.starCamVelocity = (0, _physics.starCamVelocity)(oldStar, state.star, state.camera, state.timestep);
-	  state.lightIntensity = (0, _physics.lightIntensity)(state.star, state.planet, state.camera);
-
+	  (0, _physics.updatePlanet)(state.star, state.planet, state.timestep);
 	  state.time += state.timestep;
+
+	  calculateOutputs(state);
+	}
+
+	function calculateOutputs(state) {
+	  // Note that star position and velocity depends strictly on planet, so it's an output in fact.
+	  (0, _physics.updateStar)(state.star, state.planet);
+	  state.starCamVelocity = (0, _physics.starCamVelocity)(state.star, state.camera, state.timestep);
+	  state.lightIntensity = (0, _physics.lightIntensity)(state.star, state.planet, state.camera);
 	}
 
 /***/ },

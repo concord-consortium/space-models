@@ -8,14 +8,16 @@ const ROCKY_PLANET_DENSITY = 1;
 // The relative density of Jupiter compared to Earth.
 const GAS_PLANET_DENSITY = 1 / 4.13;
 
-export function updatePlanetPos(star, planet, timestep) {
+export function updatePlanet(star, planet, timestep) {
   leapFrog(star, planet, timestep);
 }
 
-export function updateStarPos(star, planet) {
+export function updateStar(star, planet) {
   let rho = -planetMass(planet) / star.mass;
   star.x = rho * planet.x;
   star.y = rho * planet.y;
+  star.vx = rho * planet.vx;
+  star.vy = rho * planet.vy;
 }
 
 export function setCircularVelocity(planet) {
@@ -27,12 +29,14 @@ export function setCircularVelocity(planet) {
   p.vy = -v * Math.sin(a);
 }
 
-export function starCamVelocity(oldStar, star, camera, timestep) {
+export function starCamVelocity(star, camera, timestep) {
   let cameraX = 0;
   let cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
   let cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
-  let oldDist = dist(oldStar.x, oldStar.y, 0, cameraX, cameraY, cameraZ);
-  let newDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
+  let newStarX = star.x + star.vx * timestep;
+  let newStarY = star.y + star.vy * timestep;
+  let oldDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
+  let newDist = dist(newStarX, newStarY, 0, cameraX, cameraY, cameraZ);
   return (newDist - oldDist) / timestep;
 }
 
