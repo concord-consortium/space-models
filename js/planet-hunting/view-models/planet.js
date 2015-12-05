@@ -1,5 +1,6 @@
 import {SF, PLANET_RADIUS} from '../constants.js';
 import VelocityArrow from './velocity-arrow.js';
+import {VELOCITY_LEN_SCALE} from './velocity-arrow.js';
 
 const DEF_COLOR = 0x1286CD;
 const DEF_EMISSIVE = 0x002135;
@@ -26,8 +27,18 @@ export default class {
     return this.posObject.position;
   }
 
+  get scale() {
+    // We always keep scale.x equal to scale.y and scale.y, take a look at setter.
+    return this.rootObject.scale.x;
+  }
+
   set scale(v) {
     this.rootObject.scale.set(v, v, v);
+  }
+
+  // Transforms velocity defined in view units into AU (model units).
+  velocityViewUnit2AU(vx, vy) {
+    return {vx: vx / VELOCITY_LEN_SCALE / this.scale, vy: vy / VELOCITY_LEN_SCALE / this.scale};
   }
 
   setProps(props) {

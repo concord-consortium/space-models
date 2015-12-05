@@ -1112,8 +1112,6 @@
 
 	var _constants = __webpack_require__(5);
 
-	var _velocityArrow = __webpack_require__(10);
-
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1247,9 +1245,10 @@
 	        },
 	        stepHandler: function stepHandler() {
 	          var coords = _this2.interactionsManager.pointerToXYPlane();
-	          var vx = (coords.x - _this2.planet.position.x) / _velocityArrow.VELOCITY_LEN_SCALE;
-	          var vy = (coords.y - _this2.planet.position.y) / _velocityArrow.VELOCITY_LEN_SCALE;
-	          _this2.dispatch.emit('planet.change', { vx: vx, vy: vy });
+	          // Calculate coordinates of new velocity vector in view units.
+	          var vx = coords.x - _this2.planet.position.x;
+	          var vy = coords.y - _this2.planet.position.y;
+	          _this2.dispatch.emit('planet.change', _this2.planet.velocityViewUnit2AU(vx, vy));
 	        }
 	      });
 	    }
@@ -1346,6 +1345,10 @@
 	    }
 	  }, {
 	    key: 'scale',
+	    get: function get() {
+	      // We always keep scale.x equal to scale.y and scale.y, take a look at setter.
+	      return this.rootObject.scale.x;
+	    },
 	    set: function set(v) {
 	      this.rootObject.scale.set(v, v, v);
 	    }
@@ -1398,6 +1401,13 @@
 	  }
 
 	  _createClass(_class, [{
+	    key: 'velocityViewUnit2AU',
+
+	    // Transforms velocity defined in view units into AU (model units).
+	    value: function velocityViewUnit2AU(vx, vy) {
+	      return { vx: vx / _velocityArrow.VELOCITY_LEN_SCALE / this.scale, vy: vy / _velocityArrow.VELOCITY_LEN_SCALE / this.scale };
+	    }
+	  }, {
 	    key: 'setProps',
 	    value: function setProps(props) {
 	      this.position.x = props.x * _constants.SF;
@@ -1422,6 +1432,10 @@
 	    }
 	  }, {
 	    key: 'scale',
+	    get: function get() {
+	      // We always keep scale.x equal to scale.y and scale.y, take a look at setter.
+	      return this.rootObject.scale.x;
+	    },
 	    set: function set(v) {
 	      this.rootObject.scale.set(v, v, v);
 	    }

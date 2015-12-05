@@ -23,6 +23,11 @@ export default class {
     return this.posObject.position;
   }
 
+  get scale() {
+    // We always keep scale.x equal to scale.y and scale.y, take a look at setter.
+    return this.rootObject.scale.x;
+  }
+
   set scale(v) {
     this.rootObject.scale.set(v, v, v);
   }
