@@ -26,6 +26,10 @@ export default class {
     return this.posObject.position;
   }
 
+  set scale(v) {
+    this.rootObject.scale.set(v, v, v);
+  }
+
   setProps(props) {
     this.position.x = props.x * SF;
     this.position.y = props.y * SF;

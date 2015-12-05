@@ -1150,7 +1150,8 @@
 	      this.star.setProps(props.star);
 	      this.planet.setProps(props.planet);
 	      this.camera.setProps(props.camera);
-	      this.grid.setSize(gridSizeForCameraDist(props.camera.distance));
+
+	      this._setupZoomLevel(props.camera.distance);
 	    }
 	  }, {
 	    key: 'getCameraTilt',
@@ -1190,6 +1191,18 @@
 	      var newHeight = parent.clientHeight;
 	      this.renderer.setSize(newWidth, newHeight);
 	      this.camera.setSize(newWidth, newHeight);
+	    }
+
+	    // Updates grid size and makes certain objects bigger so they are still visible.
+
+	  }, {
+	    key: '_setupZoomLevel',
+	    value: function _setupZoomLevel(cameraDistance) {
+	      var gridSize = gridSizeForCameraDist(cameraDistance);
+	      this.grid.size = gridSize;
+	      var objectScale = objectScaleForGridSize(gridSize);
+	      this.planet.scale = objectScale;
+	      this.star.scale = objectScale;
 	    }
 	  }, {
 	    key: '_initScene',
@@ -1253,7 +1266,17 @@
 	  } else if (camDist < 64) {
 	    return 8;
 	  } else {
-	    return 80;
+	    return 64;
+	  }
+	}
+
+	function objectScaleForGridSize(gridSize) {
+	  if (gridSize <= 2) {
+	    return 1;
+	  } else if (gridSize <= 8) {
+	    return 4;
+	  } else {
+	    return 32;
 	  }
 	}
 
@@ -1320,6 +1343,11 @@
 	    key: 'position',
 	    get: function get() {
 	      return this.posObject.position;
+	    }
+	  }, {
+	    key: 'scale',
+	    set: function set(v) {
+	      this.rootObject.scale.set(v, v, v);
 	    }
 	  }]);
 
@@ -1391,6 +1419,11 @@
 	    key: 'position',
 	    get: function get() {
 	      return this.posObject.position;
+	    }
+	  }, {
+	    key: 'scale',
+	    set: function set(v) {
+	      this.rootObject.scale.set(v, v, v);
 	    }
 	  }]);
 
@@ -1491,40 +1524,42 @@
 
 	var _constants = __webpack_require__(5);
 
+	var _axis = __webpack_require__(23);
+
+	var _axis2 = _interopRequireDefault(_axis);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var _class = (function () {
 	  function _class() {
+	    var size = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
+	    var steps = arguments.length <= 1 || arguments[1] === undefined ? 8 : arguments[1];
+
 	    _classCallCheck(this, _class);
 
-	    var geometry = new THREE.Geometry();
-	    geometry.dynamic = true;
-	    var material = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
-	    this.mesh = new THREE.LineSegments(geometry, material);
+	    this.initialSize = size;
 
-	    this.setSize(2);
+	    this.geometry = gridGeometry(size, steps);
+	    this.material = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
+	    this.mesh = new THREE.LineSegments(this.geometry, this.material);
+
+	    this.axis = new _axis2.default(size);
+	    this.mesh.add(this.axis.rootObject);
 	  }
 
 	  _createClass(_class, [{
-	    key: 'setSize',
-	    value: function setSize(newSize) {
-	      if (this.oldSize === newSize) return;
-
-	      var size = newSize * _constants.SF; // convert AU to view units
-	      var steps = 8;
-	      var step = size / steps;
-
-	      var geometry = this.mesh.geometry;
-	      geometry.vertices.length = 0;
-	      for (var i = -size; i <= size; i += step) {
-	        geometry.vertices.push(new THREE.Vector3(-size, i, 0));
-	        geometry.vertices.push(new THREE.Vector3(size, i, 0));
-
-	        geometry.vertices.push(new THREE.Vector3(i, -size, 0));
-	        geometry.vertices.push(new THREE.Vector3(i, size, 0));
-	      }
-	      geometry.verticesNeedUpdate = true;
-	      this.oldSize = newSize;
+	    key: 'size',
+	    set: function set(v) {
+	      if (v === this._oldSize) return;
+	      // We could regenerate all the geometry, but it's simpler to use scaling (it will handle all the
+	      // children objects too). In such case, labels won't match size of the grid, so we need to
+	      // update them manually.
+	      v = v / this.initialSize;
+	      this.rootObject.scale.set(v, v, v);
+	      this.axis.setLabelsRange(v);
+	      this._oldSize = v;
 	    }
 	  }, {
 	    key: 'rootObject',
@@ -1542,6 +1577,19 @@
 	})();
 
 	exports.default = _class;
+
+	function gridGeometry(size, steps) {
+	  var geometry = new THREE.Geometry();
+	  size = size * _constants.SF;
+	  var step = size / steps;
+	  for (var i = -size; i <= size; i += step) {
+	    geometry.vertices.push(new THREE.Vector3(-size, i, 0));
+	    geometry.vertices.push(new THREE.Vector3(size, i, 0));
+	    geometry.vertices.push(new THREE.Vector3(i, -size, 0));
+	    geometry.vertices.push(new THREE.Vector3(i, size, 0));
+	  }
+	  return geometry;
+	}
 
 /***/ },
 /* 12 */
@@ -11654,6 +11702,153 @@
 	    this.disconnect = disconnect.bind(this);
 	};
 
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _constants = __webpack_require__(5);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var _class = (function () {
+	  function _class(text) {
+	    _classCallCheck(this, _class);
+
+	    var size = 0.03 * _constants.SF;
+	    this.geometry = new THREE.TextGeometry(text, {
+	      size: size,
+	      height: 0.001 * _constants.SF
+	    });
+	    this.material = new THREE.LineBasicMaterial({ color: 0xffffaa });
+	    this.mesh = new THREE.Mesh(this.geometry, this.material);
+	    this.mesh.position.x = size;
+	    this.mesh.position.y = -size * 0.5;
+
+	    this.posObject = new THREE.Object3D();
+	    this.posObject.add(this.mesh);
+	  }
+
+	  _createClass(_class, [{
+	    key: 'dispose',
+	    value: function dispose() {
+	      this.geometry.dispose();
+	      this.material.dispose();
+	    }
+	  }, {
+	    key: 'rootObject',
+	    get: function get() {
+	      return this.posObject;
+	    }
+	  }, {
+	    key: 'position',
+	    get: function get() {
+	      return this.posObject.position;
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _constants = __webpack_require__(5);
+
+	var _label = __webpack_require__(22);
+
+	var _label2 = _interopRequireDefault(_label);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var _class = (function () {
+	  function _class() {
+	    var size = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
+	    var ticks = arguments.length <= 1 || arguments[1] === undefined ? 4 : arguments[1];
+
+	    _classCallCheck(this, _class);
+
+	    this.size = size;
+	    this.ticks = ticks;
+
+	    this.geometry = axisGeometry(size, ticks);
+	    this.material = new THREE.LineBasicMaterial({ color: 0xffffaa, linewidth: 2 });
+	    this.mesh = new THREE.LineSegments(this.geometry, this.material);
+
+	    this.labels = [];
+	    this.setLabelsRange(size);
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setLabelsRange',
+	    value: function setLabelsRange(maxValue) {
+	      var _this = this;
+
+	      this.labels.forEach(function (lbl) {
+	        _this.mesh.remove(lbl.rootObject);
+	        lbl.dispose();
+	      });
+	      this.labels = [];
+
+	      for (var i = 1; i <= this.ticks; i++) {
+	        var lbl = new _label2.default((maxValue * i / this.ticks).toFixed(1) + ' AU');
+	        lbl.position.y = this.size * _constants.SF * i / this.ticks;
+	        this.labels.push(lbl);
+	        this.mesh.add(lbl.rootObject);
+	      }
+	    }
+	  }, {
+	    key: 'rootObject',
+	    get: function get() {
+	      return this.mesh;
+	    }
+	  }, {
+	    key: 'position',
+	    get: function get() {
+	      return this.mesh.position;
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+	function axisGeometry(size, ticks) {
+	  var geometry = new THREE.Geometry();
+	  var len = size * _constants.SF; // convert AU to view units
+	  var tickWidth = len / 70;
+	  // Main axis.
+	  geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+	  geometry.vertices.push(new THREE.Vector3(0, len, 0));
+	  // Tick marks.
+	  for (var i = 1; i <= ticks; i++) {
+	    geometry.vertices.push(new THREE.Vector3(-tickWidth, len * i / ticks, 0));
+	    geometry.vertices.push(new THREE.Vector3(tickWidth, len * i / ticks, 0));
+	  }
+	  return geometry;
+	}
 
 /***/ }
 /******/ ]);
