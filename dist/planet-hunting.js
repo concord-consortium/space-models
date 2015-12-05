@@ -50,7 +50,7 @@
 
 	var _app2 = _interopRequireDefault(_app);
 
-	var _labIntegration = __webpack_require__(13);
+	var _labIntegration = __webpack_require__(16);
 
 	var _labIntegration2 = _interopRequireDefault(_labIntegration);
 
@@ -1094,23 +1094,25 @@
 
 	var _planet2 = _interopRequireDefault(_planet);
 
-	var _grid = __webpack_require__(10);
+	var _grid = __webpack_require__(11);
 
 	var _grid2 = _interopRequireDefault(_grid);
 
-	var _breadCrumbs = __webpack_require__(11);
+	var _breadCrumbs = __webpack_require__(12);
 
 	var _breadCrumbs2 = _interopRequireDefault(_breadCrumbs);
 
-	var _camera = __webpack_require__(12);
+	var _camera = __webpack_require__(13);
 
 	var _camera2 = _interopRequireDefault(_camera);
 
-	var _interactionsManager = __webpack_require__(19);
+	var _interactionsManager = __webpack_require__(14);
 
 	var _interactionsManager2 = _interopRequireDefault(_interactionsManager);
 
 	var _constants = __webpack_require__(5);
+
+	var _velocityArrow = __webpack_require__(10);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1207,6 +1209,7 @@
 	    value: function _initInteractions() {
 	      var _this2 = this;
 
+	      // Earth dragging.
 	      this.interactionsManager.registerInteraction({
 	        test: function test() {
 	          return _this2.interactionsManager.isUserPointing(_this2.planet.mesh);
@@ -1218,6 +1221,22 @@
 	        stepHandler: function stepHandler() {
 	          var coords = _this2.interactionsManager.pointerToXYPlane();
 	          _this2.dispatch.emit('planet.change', { x: coords.x / _constants.SF, y: coords.y / _constants.SF });
+	        }
+	      });
+	      // Velocity arrow(head) dragging.
+	      this.interactionsManager.registerInteraction({
+	        test: function test() {
+	          return _this2.interactionsManager.isUserPointing(_this2.planet.velocityArrow.headMesh);
+	        },
+	        activationChangeHandler: function activationChangeHandler(isActive) {
+	          _this2.planet.velocityArrow.setHighlighted(isActive);
+	          document.body.style.cursor = isActive ? 'move' : '';
+	        },
+	        stepHandler: function stepHandler() {
+	          var coords = _this2.interactionsManager.pointerToXYPlane();
+	          var vx = (coords.x - _this2.planet.position.x) / _velocityArrow.VELOCITY_LEN_SCALE;
+	          var vy = (coords.y - _this2.planet.position.y) / _velocityArrow.VELOCITY_LEN_SCALE;
+	          _this2.dispatch.emit('planet.change', { vx: vx, vy: vy });
 	        }
 	      });
 	    }
@@ -1323,7 +1342,7 @@
 
 	var _constants = __webpack_require__(5);
 
-	var _velocityArrow = __webpack_require__(23);
+	var _velocityArrow = __webpack_require__(10);
 
 	var _velocityArrow2 = _interopRequireDefault(_velocityArrow);
 
@@ -1391,6 +1410,84 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.VELOCITY_LEN_SCALE = undefined;
+
+	var _constants = __webpack_require__(5);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var VELOCITY_LEN_SCALE = exports.VELOCITY_LEN_SCALE = _constants.SF * 0.05;
+	var DEF_COLOR = 0x00ff00;
+	var DEF_EMISSIVE = 0x007700;
+	var HIGHLIGHT_COLOR = 0xff0000;
+	var HIGHLIGHT_EMISSIVE = 0xbb3333;
+
+	var _class = (function () {
+	  function _class() {
+	    _classCallCheck(this, _class);
+
+	    var radius = _constants.PLANET_RADIUS * _constants.SF / 4;
+	    var height = _constants.PLANET_RADIUS * _constants.SF * 4;
+	    var headRadius = radius * 3;
+	    var headHeight = height / 3;
+
+	    // Set height to 1, as it will be scaled later (#setProps).
+	    this.arrowGeometry = new THREE.CylinderGeometry(radius, radius, 1, 8);
+	    this.arrowMaterial = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
+	    this.arrowMesh = new THREE.Mesh(this.arrowGeometry, this.arrowMaterial);
+
+	    this.headGeometry = new THREE.CylinderGeometry(headRadius, 0, headHeight, 16);
+	    this.headMaterial = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
+	    this.headMesh = new THREE.Mesh(this.headGeometry, this.headMaterial);
+
+	    this.pivot = new THREE.Object3D();
+	    this.pivot.add(this.headMesh);
+	    this.pivot.add(this.arrowMesh);
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setProps',
+	    value: function setProps(planet) {
+	      this.pivot.rotation.z = Math.atan2(planet.vx, -planet.vy);
+	      var len = Math.sqrt(planet.vx * planet.vx + planet.vy * planet.vy) * VELOCITY_LEN_SCALE;
+	      this.arrowMesh.scale.y = len;
+	      this.arrowMesh.position.y = -len * 0.5;
+	      this.headMesh.position.y = -len;
+	    }
+	  }, {
+	    key: 'setHighlighted',
+	    value: function setHighlighted(v) {
+	      this.headMaterial.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
+	      this.headMaterial.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
+	    }
+	  }, {
+	    key: 'rootObject',
+	    get: function get() {
+	      return this.pivot;
+	    }
+	  }, {
+	    key: 'position',
+	    get: function get() {
+	      return this.pivot.position;
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
 
 	var _constants = __webpack_require__(5);
 
@@ -1447,7 +1544,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1523,7 +1620,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1630,569 +1727,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	exports.default = function (app) {
-	  var phone = _iframePhone2.default.getIFrameEndpoint();
-
-	  app.on('play', function () {
-	    phone.post('play.iframe-model');
-	  });
-	  app.on('stop', function () {
-	    phone.post('stop.iframe-model');
-	  });
-	  app.on('tick', function () {
-	    phone.post('tick');
-	  });
-	  app.on('state.change', function (newState) {
-	    phone.post('outputs', getOutputs(newState));
-	  });
-
-	  phone.addListener('play', function () {
-	    app.play();
-	  });
-	  phone.addListener('stop', function () {
-	    app.stop();
-	  });
-	  phone.addListener('set', function (content) {
-	    // 'set' {name: 'planet.x', value: 1} => app.state.planet.x = content.value
-	    var names = content.name.split('.');
-	    var stateObj = {};
-	    var state = stateObj;
-	    while (names.length > 1) {
-	      state = state[names.shift()] = {};
-	    }
-	    state[names[0]] = content.value;
-	    app.setState(stateObj);
-	  });
-	  phone.addListener('makeCircularOrbit', function () {
-	    app.makeCircularOrbit();
-	  });
-
-	  phone.initialize();
-
-	  phone.post('outputs', getOutputs(app.state));
-	};
-
-	var _utils = __webpack_require__(3);
-
-	var _iframePhone = __webpack_require__(14);
-
-	var _iframePhone2 = _interopRequireDefault(_iframePhone);
-
-	var _physics = __webpack_require__(4);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function getOutputs(state) {
-	  var outputs = {};
-	  outputs['time'] = state.time;
-	  outputs['planet.mass'] = (0, _physics.planetMass)(state.planet);
-	  outputs['camera.tilt'] = state.camera.tilt;
-	  outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
-	  outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
-	  return outputs;
-	}
-
-/***/ },
 /* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = {
-	  /**
-	   * Allows to communicate with an iframe.
-	   */
-	  ParentEndpoint:  __webpack_require__(15),
-	  /**
-	   * Allows to communicate with a parent page.
-	   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
-	   */
-	  getIFrameEndpoint: __webpack_require__(17),
-	  structuredClone: __webpack_require__(16),
-
-	  // TODO: May be misnamed
-	  IframePhoneRpcEndpoint: __webpack_require__(18)
-
-	};
-
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var structuredClone = __webpack_require__(16);
-
-	/**
-	  Call as:
-	    new ParentEndpoint(targetWindow, targetOrigin, afterConnectedCallback)
-	      targetWindow is a WindowProxy object. (Messages will be sent to it)
-
-	      targetOrigin is the origin of the targetWindow. (Messages will be restricted to this origin)
-
-	      afterConnectedCallback is an optional callback function to be called when the connection is
-	        established.
-
-	  OR (less secure):
-	    new ParentEndpoint(targetIframe, afterConnectedCallback)
-
-	      targetIframe is a DOM object (HTMLIframeElement); messages will be sent to its contentWindow.
-
-	      afterConnectedCallback is an optional callback function
-
-	    In this latter case, targetOrigin will be inferred from the value of the src attribute of the
-	    provided DOM object at the time of the constructor invocation. This is less secure because the
-	    iframe might have been navigated to an unexpected domain before constructor invocation.
-
-	  Note that it is important to specify the expected origin of the iframe's content to safeguard
-	  against sending messages to an unexpected domain. This might happen if our iframe is navigated to
-	  a third-party URL unexpectedly. Furthermore, having a reference to Window object (as in the first
-	  form of the constructor) does not protect against sending a message to the wrong domain. The
-	  window object is actualy a WindowProxy which transparently proxies the Window object of the
-	  underlying iframe, so that when the iframe is navigated, the "same" WindowProxy now references a
-	  completely differeent Window object, possibly controlled by a hostile domain.
-
-	  See http://www.esdiscuss.org/topic/a-dom-use-case-that-can-t-be-emulated-with-direct-proxies for
-	  more about this weird behavior of WindowProxies (the type returned by <iframe>.contentWindow).
-	*/
-
-	module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, afterConnectedCallback) {
-	  var selfOrigin = window.location.href.match(/(.*?\/\/.*?)\//)[1];
-	  var postMessageQueue = [];
-	  var connected = false;
-	  var handlers = {};
-	  var targetWindowIsIframeElement;
-
-	  function getOrigin(iframe) {
-	    return iframe.src.match(/(.*?\/\/.*?)\//)[1];
-	  }
-
-	  function post(type, content) {
-	    var message;
-	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
-	    // as the first argument.
-	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
-	      message = type;
-	    } else {
-	      message = {
-	        type: type,
-	        content: content
-	      };
-	    }
-	    if (connected) {
-	      var tWindow = getTargetWindow();
-	      // if we are laready connected ... send the message
-	      message.origin = selfOrigin;
-	      // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
-	      //     https://github.com/Modernizr/Modernizr/issues/388
-	      //     http://jsfiddle.net/ryanseddon/uZTgD/2/
-	      if (structuredClone.supported()) {
-	        tWindow.postMessage(message, targetOrigin);
-	      } else {
-	        tWindow.postMessage(JSON.stringify(message), targetOrigin);
-	      }
-	    } else {
-	      // else queue up the messages to send after connection complete.
-	      postMessageQueue.push(message);
-	    }
-	  }
-
-	  function addListener(messageName, func) {
-	    handlers[messageName] = func;
-	  }
-
-	  function removeListener(messageName) {
-	    handlers[messageName] = null;
-	  }
-
-	  // Note that this function can't be used when IFrame element hasn't been added to DOM yet
-	  // (.contentWindow would be null). At the moment risk is purely theoretical, as the parent endpoint
-	  // only listens for an incoming 'hello' message and the first time we call this function
-	  // is in #receiveMessage handler (so iframe had to be initialized before, as it could send 'hello').
-	  // It would become important when we decide to refactor the way how communication is initialized.
-	  function getTargetWindow() {
-	    if (targetWindowIsIframeElement) {
-	      var tWindow = targetWindowOrIframeEl.contentWindow;
-	      if (!tWindow) {
-	        throw "IFrame element needs to be added to DOM before communication " +
-	              "can be started (.contentWindow is not available)";
-	      }
-	      return tWindow;
-	    }
-	    return targetWindowOrIframeEl;
-	  }
-
-	  function receiveMessage(message) {
-	    var messageData;
-	    if (message.source === getTargetWindow() && message.origin === targetOrigin) {
-	      messageData = message.data;
-	      if (typeof messageData === 'string') {
-	        messageData = JSON.parse(messageData);
-	      }
-	      if (handlers[messageData.type]) {
-	        handlers[messageData.type](messageData.content);
-	      } else {
-	        console.log("cant handle type: " + messageData.type);
-	      }
-	    }
-	  }
-
-	  function disconnect() {
-	    connected = false;
-	    window.removeEventListener('message', receiveMessage);
-	  }
-
-	  // handle the case that targetWindowOrIframeEl is actually an <iframe> rather than a Window(Proxy) object
-	  // Note that if it *is* a WindowProxy, this probe will throw a SecurityException, but in that case
-	  // we also don't need to do anything
-	  try {
-	    targetWindowIsIframeElement = targetWindowOrIframeEl.constructor === HTMLIFrameElement;
-	  } catch (e) {
-	    targetWindowIsIframeElement = false;
-	  }
-
-	  if (targetWindowIsIframeElement) {
-	    // Infer the origin ONLY if the user did not supply an explicit origin, i.e., if the second
-	    // argument is empty or is actually a callback (meaning it is supposed to be the
-	    // afterConnectionCallback)
-	    if (!targetOrigin || targetOrigin.constructor === Function) {
-	      afterConnectedCallback = targetOrigin;
-	      targetOrigin = getOrigin(targetWindowOrIframeEl);
-	    }
-	  }
-
-	  // when we receive 'hello':
-	  addListener('hello', function() {
-	    connected = true;
-
-	    // send hello response
-	    post('hello');
-
-	    // give the user a chance to do things now that we are connected
-	    // note that is will happen before any queued messages
-	    if (afterConnectedCallback && typeof afterConnectedCallback === "function") {
-	      afterConnectedCallback();
-	    }
-
-	    // Now send any messages that have been queued up ...
-	    while(postMessageQueue.length > 0) {
-	      post(postMessageQueue.shift());
-	    }
-	  });
-
-	  window.addEventListener('message', receiveMessage, false);
-
-	  // Public API.
-	  return {
-	    post: post,
-	    addListener: addListener,
-	    removeListener: removeListener,
-	    disconnect: disconnect,
-	    getTargetWindow: getTargetWindow,
-	    targetOrigin: targetOrigin
-	  };
-	};
-
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	var featureSupported = false;
-
-	(function () {
-	  var result = 0;
-
-	  if (!!window.postMessage) {
-	    try {
-	      // Safari 5.1 will sometimes throw an exception and sometimes won't, lolwut?
-	      // When it doesn't we capture the message event and check the
-	      // internal [[Class]] property of the message being passed through.
-	      // Safari will pass through DOM nodes as Null iOS safari on the other hand
-	      // passes it through as DOMWindow, gotcha.
-	      window.onmessage = function(e){
-	        var type = Object.prototype.toString.call(e.data);
-	        result = (type.indexOf("Null") != -1 || type.indexOf("DOMWindow") != -1) ? 1 : 0;
-	        featureSupported = {
-	          'structuredClones': result
-	        };
-	      };
-	      // Spec states you can't transmit DOM nodes and it will throw an error
-	      // postMessage implimentations that support cloned data will throw.
-	      window.postMessage(document.createElement("a"),"*");
-	    } catch(e) {
-	      // BBOS6 throws but doesn't pass through the correct exception
-	      // so check error message
-	      result = (e.DATA_CLONE_ERR || e.message == "Cannot post cyclic structures.") ? 1 : 0;
-	      featureSupported = {
-	        'structuredClones': result
-	      };
-	    }
-	  }
-	}());
-
-	exports.supported = function supported() {
-	  return featureSupported && featureSupported.structuredClones > 0;
-	};
-
-
-/***/ },
-/* 17 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var structuredClone = __webpack_require__(16);
-	var HELLO_INTERVAL_LENGTH = 200;
-	var HELLO_TIMEOUT_LENGTH = 60000;
-
-	function IFrameEndpoint() {
-	  var parentOrigin;
-	  var listeners = {};
-	  var isInitialized = false;
-	  var connected = false;
-	  var postMessageQueue = [];
-	  var helloInterval;
-
-	  function postToTarget(message, target) {
-	    // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
-	    //     https://github.com/Modernizr/Modernizr/issues/388
-	    //     http://jsfiddle.net/ryanseddon/uZTgD/2/
-	    if (structuredClone.supported()) {
-	      window.parent.postMessage(message, target);
-	    } else {
-	      window.parent.postMessage(JSON.stringify(message), target);
-	    }
-	  }
-
-	  function post(type, content) {
-	    var message;
-	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
-	    // as the first argument.
-	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
-	      message = type;
-	    } else {
-	      message = {
-	        type: type,
-	        content: content
-	      };
-	    }
-	    if (connected) {
-	      postToTarget(message, parentOrigin);
-	    } else {
-	      postMessageQueue.push(message);
-	    }
-	  }
-
-	  // Only the initial 'hello' message goes permissively to a '*' target (because due to cross origin
-	  // restrictions we can't find out our parent's origin until they voluntarily send us a message
-	  // with it.)
-	  function postHello() {
-	    postToTarget({
-	      type: 'hello',
-	      origin: document.location.href.match(/(.*?\/\/.*?)\//)[1]
-	    }, '*');
-	  }
-
-	  function addListener(type, fn) {
-	    listeners[type] = fn;
-	  }
-
-	  function removeAllListeners() {
-	    listeners = {};
-	  }
-
-	  function getListenerNames() {
-	    return Object.keys(listeners);
-	  }
-
-	  function messageListener(message) {
-	      // Anyone can send us a message. Only pay attention to messages from parent.
-	      if (message.source !== window.parent) return;
-
-	      var messageData = message.data;
-
-	      if (typeof messageData === 'string') messageData = JSON.parse(messageData);
-
-	      // We don't know origin property of parent window until it tells us.
-	      if (!connected && messageData.type === 'hello') {
-	        // This is the return handshake from the embedding window.
-	        parentOrigin = messageData.origin;
-	        connected = true;
-	        stopPostingHello();
-	        while(postMessageQueue.length > 0) {
-	          post(postMessageQueue.shift());
-	        }
-	      }
-
-	      // Perhaps-redundantly insist on checking origin as well as source window of message.
-	      if (message.origin === parentOrigin) {
-	        if (listeners[messageData.type]) listeners[messageData.type](messageData.content);
-	      }
-	   }
-
-	   function disconnect() {
-	     connected = false;
-	     stopPostingHello();
-	     window.removeEventListener('message', messsageListener);
-	   }
-
-	  /**
-	    Initialize communication with the parent frame. This should not be called until the app's custom
-	    listeners are registered (via our 'addListener' public method) because, once we open the
-	    communication, the parent window may send any messages it may have queued. Messages for which
-	    we don't have handlers will be silently ignored.
-	  */
-	  function initialize() {
-	    if (isInitialized) {
-	      return;
-	    }
-	    isInitialized = true;
-	    if (window.parent === window) return;
-
-	    // We kick off communication with the parent window by sending a "hello" message. Then we wait
-	    // for a handshake (another "hello" message) from the parent window.
-	    postHello();
-	    startPostingHello();
-	    window.addEventListener('message', messageListener, false);
-	  }
-
-	  function startPostingHello() {
-	    if (helloInterval) {
-	      stopPostingHello();
-	    }
-	    helloInterval = window.setInterval(postHello, HELLO_INTERVAL_LENGTH);
-	    window.setTimeout(stopPostingHello, HELLO_TIMEOUT_LENGTH);
-	  }
-
-	  function stopPostingHello() {
-	    window.clearInterval(helloInterval);
-	    helloInterval = null;
-	  }
-
-	  // Public API.
-	  return {
-	    initialize        : initialize,
-	    getListenerNames  : getListenerNames,
-	    addListener       : addListener,
-	    removeAllListeners: removeAllListeners,
-	    disconnect        : disconnect,
-	    post              : post
-	  };
-	}
-
-	var instance = null;
-
-	// IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
-	module.exports = function getIFrameEndpoint() {
-	  if (!instance) {
-	    instance = new IFrameEndpoint();
-	  }
-	  return instance;
-	};
-
-/***/ },
-/* 18 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var ParentEndpoint = __webpack_require__(15);
-	var getIFrameEndpoint = __webpack_require__(17);
-
-	// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
-	// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
-	function getPseudoUUID() {
-	    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-	    var len = chars.length;
-	    var ret = [];
-
-	    for (var i = 0; i < 10; i++) {
-	        ret.push(chars[Math.floor(Math.random() * len)]);
-	    }
-	    return ret.join('');
-	}
-
-	module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindow, targetOrigin, phone) {
-	    var pendingCallbacks = Object.create({});
-
-	    // if it's a non-null object, rather than a function, 'handler' is really an options object
-	    if (handler && typeof handler === 'object') {
-	        namespace = handler.namespace;
-	        targetWindow = handler.targetWindow;
-	        targetOrigin = handler.targetOrigin;
-	        phone = handler.phone;
-	        handler = handler.handler;
-	    }
-
-	    if ( ! phone ) {
-	        if (targetWindow === window.parent) {
-	            phone = getIFrameEndpoint();
-	            phone.initialize();
-	        } else {
-	            phone = new ParentEndpoint(targetWindow, targetOrigin);
-	        }
-	    }
-
-	    phone.addListener(namespace, function(message) {
-	        var callbackObj;
-
-	        if (message.messageType === 'call' && typeof this.handler === 'function') {
-	            this.handler.call(undefined, message.value, function(returnValue) {
-	                phone.post(namespace, {
-	                    messageType: 'returnValue',
-	                    uuid: message.uuid,
-	                    value: returnValue
-	                });
-	            });
-	        } else if (message.messageType === 'returnValue') {
-	            callbackObj = pendingCallbacks[message.uuid];
-
-	            if (callbackObj) {
-	                window.clearTimeout(callbackObj.timeout);
-	                if (callbackObj.callback) {
-	                    callbackObj.callback.call(undefined, message.value);
-	                }
-	                pendingCallbacks[message.uuid] = null;
-	            }
-	        }
-	    }.bind(this));
-
-	    function call(message, callback) {
-	        var uuid = getPseudoUUID();
-
-	        pendingCallbacks[uuid] = {
-	            callback: callback,
-	            timeout: window.setTimeout(function() {
-	                if (callback) {
-	                    callback(undefined, new Error("IframePhone timed out waiting for reply"));
-	                }
-	            }, 2000)
-	        };
-
-	        phone.post(namespace, {
-	            messageType: 'call',
-	            uuid: uuid,
-	            value: message
-	        });
-	    }
-
-	    function disconnect() {
-	        phone.disconnect();
-	    }
-
-	    this.handler = handler;
-	    this.call = call.bind(this);
-	    this.disconnect = disconnect.bind(this);
-	};
-
-
-/***/ },
-/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2203,7 +1738,7 @@
 	  value: true
 	});
 
-	var _jquery = __webpack_require__(20);
+	var _jquery = __webpack_require__(15);
 
 	var _jquery2 = _interopRequireDefault(_jquery);
 
@@ -2343,7 +1878,7 @@
 	}
 
 /***/ },
-/* 20 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -11559,80 +11094,566 @@
 
 
 /***/ },
-/* 21 */,
-/* 22 */,
-/* 23 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	exports.default = function (app) {
+	  var phone = _iframePhone2.default.getIFrameEndpoint();
 
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	  app.on('play', function () {
+	    phone.post('play.iframe-model');
+	  });
+	  app.on('stop', function () {
+	    phone.post('stop.iframe-model');
+	  });
+	  app.on('tick', function () {
+	    phone.post('tick');
+	  });
+	  app.on('state.change', function (newState) {
+	    phone.post('outputs', getOutputs(newState));
+	  });
 
-	var VELOCITY_LEN_SCALE = _constants.SF * 0.05;
-	var DEF_COLOR = 0x00ff00;
-	var DEF_EMISSIVE = 0x007700;
+	  phone.addListener('play', function () {
+	    app.play();
+	  });
+	  phone.addListener('stop', function () {
+	    app.stop();
+	  });
+	  phone.addListener('set', function (content) {
+	    // 'set' {name: 'planet.x', value: 1} => app.state.planet.x = content.value
+	    var names = content.name.split('.');
+	    var stateObj = {};
+	    var state = stateObj;
+	    while (names.length > 1) {
+	      state = state[names.shift()] = {};
+	    }
+	    state[names[0]] = content.value;
+	    app.setState(stateObj);
+	  });
+	  phone.addListener('makeCircularOrbit', function () {
+	    app.makeCircularOrbit();
+	  });
 
-	var _class = (function () {
-	  function _class() {
-	    _classCallCheck(this, _class);
+	  phone.initialize();
 
-	    var radius = _constants.PLANET_RADIUS * _constants.SF / 4;
-	    var height = _constants.PLANET_RADIUS * _constants.SF * 4;
-	    var headRadius = radius * 3;
-	    var headHeight = height / 3;
+	  phone.post('outputs', getOutputs(app.state));
+	};
 
-	    // Set height to 1, as it will be scaled later (#setProps).
-	    this.arrowGeometry = new THREE.CylinderGeometry(radius, radius, 1, 8);
-	    this.material = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
-	    this.arrowMesh = new THREE.Mesh(this.arrowGeometry, this.material);
+	var _utils = __webpack_require__(3);
 
-	    this.headGeometry = new THREE.CylinderGeometry(headRadius, 0, headHeight, 16);
-	    this.headMesh = new THREE.Mesh(this.headGeometry, this.material);
+	var _iframePhone = __webpack_require__(17);
 
-	    this.pivot = new THREE.Object3D();
-	    this.pivot.add(this.headMesh);
-	    this.pivot.add(this.arrowMesh);
+	var _iframePhone2 = _interopRequireDefault(_iframePhone);
+
+	var _physics = __webpack_require__(4);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function getOutputs(state) {
+	  var outputs = {};
+	  outputs['time'] = state.time;
+	  outputs['planet.mass'] = (0, _physics.planetMass)(state.planet);
+	  outputs['camera.tilt'] = state.camera.tilt;
+	  outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
+	  outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
+	  return outputs;
+	}
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  /**
+	   * Allows to communicate with an iframe.
+	   */
+	  ParentEndpoint:  __webpack_require__(18),
+	  /**
+	   * Allows to communicate with a parent page.
+	   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+	   */
+	  getIFrameEndpoint: __webpack_require__(20),
+	  structuredClone: __webpack_require__(19),
+
+	  // TODO: May be misnamed
+	  IframePhoneRpcEndpoint: __webpack_require__(21)
+
+	};
+
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var structuredClone = __webpack_require__(19);
+
+	/**
+	  Call as:
+	    new ParentEndpoint(targetWindow, targetOrigin, afterConnectedCallback)
+	      targetWindow is a WindowProxy object. (Messages will be sent to it)
+
+	      targetOrigin is the origin of the targetWindow. (Messages will be restricted to this origin)
+
+	      afterConnectedCallback is an optional callback function to be called when the connection is
+	        established.
+
+	  OR (less secure):
+	    new ParentEndpoint(targetIframe, afterConnectedCallback)
+
+	      targetIframe is a DOM object (HTMLIframeElement); messages will be sent to its contentWindow.
+
+	      afterConnectedCallback is an optional callback function
+
+	    In this latter case, targetOrigin will be inferred from the value of the src attribute of the
+	    provided DOM object at the time of the constructor invocation. This is less secure because the
+	    iframe might have been navigated to an unexpected domain before constructor invocation.
+
+	  Note that it is important to specify the expected origin of the iframe's content to safeguard
+	  against sending messages to an unexpected domain. This might happen if our iframe is navigated to
+	  a third-party URL unexpectedly. Furthermore, having a reference to Window object (as in the first
+	  form of the constructor) does not protect against sending a message to the wrong domain. The
+	  window object is actualy a WindowProxy which transparently proxies the Window object of the
+	  underlying iframe, so that when the iframe is navigated, the "same" WindowProxy now references a
+	  completely differeent Window object, possibly controlled by a hostile domain.
+
+	  See http://www.esdiscuss.org/topic/a-dom-use-case-that-can-t-be-emulated-with-direct-proxies for
+	  more about this weird behavior of WindowProxies (the type returned by <iframe>.contentWindow).
+	*/
+
+	module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, afterConnectedCallback) {
+	  var selfOrigin = window.location.href.match(/(.*?\/\/.*?)\//)[1];
+	  var postMessageQueue = [];
+	  var connected = false;
+	  var handlers = {};
+	  var targetWindowIsIframeElement;
+
+	  function getOrigin(iframe) {
+	    return iframe.src.match(/(.*?\/\/.*?)\//)[1];
 	  }
 
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(planet) {
-	      this.pivot.rotation.z = Math.atan2(planet.vx, -planet.vy);
-	      var len = Math.sqrt(planet.vx * planet.vx + planet.vy * planet.vy) * VELOCITY_LEN_SCALE;
-	      this.arrowMesh.scale.y = len;
-	      this.arrowMesh.position.y = -len * 0.5;
-	      this.headMesh.position.y = -len;
+	  function post(type, content) {
+	    var message;
+	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+	    // as the first argument.
+	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+	      message = type;
+	    } else {
+	      message = {
+	        type: type,
+	        content: content
+	      };
 	    }
-	  }, {
-	    key: 'setHighlighted',
-	    value: function setHighlighted(v) {
-	      this.material.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
-	      this.material.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
+	    if (connected) {
+	      var tWindow = getTargetWindow();
+	      // if we are laready connected ... send the message
+	      message.origin = selfOrigin;
+	      // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+	      //     https://github.com/Modernizr/Modernizr/issues/388
+	      //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+	      if (structuredClone.supported()) {
+	        tWindow.postMessage(message, targetOrigin);
+	      } else {
+	        tWindow.postMessage(JSON.stringify(message), targetOrigin);
+	      }
+	    } else {
+	      // else queue up the messages to send after connection complete.
+	      postMessageQueue.push(message);
 	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.pivot;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.pivot.position;
-	    }
-	  }]);
+	  }
 
-	  return _class;
-	})();
+	  function addListener(messageName, func) {
+	    handlers[messageName] = func;
+	  }
 
-	exports.default = _class;
+	  function removeListener(messageName) {
+	    handlers[messageName] = null;
+	  }
+
+	  // Note that this function can't be used when IFrame element hasn't been added to DOM yet
+	  // (.contentWindow would be null). At the moment risk is purely theoretical, as the parent endpoint
+	  // only listens for an incoming 'hello' message and the first time we call this function
+	  // is in #receiveMessage handler (so iframe had to be initialized before, as it could send 'hello').
+	  // It would become important when we decide to refactor the way how communication is initialized.
+	  function getTargetWindow() {
+	    if (targetWindowIsIframeElement) {
+	      var tWindow = targetWindowOrIframeEl.contentWindow;
+	      if (!tWindow) {
+	        throw "IFrame element needs to be added to DOM before communication " +
+	              "can be started (.contentWindow is not available)";
+	      }
+	      return tWindow;
+	    }
+	    return targetWindowOrIframeEl;
+	  }
+
+	  function receiveMessage(message) {
+	    var messageData;
+	    if (message.source === getTargetWindow() && message.origin === targetOrigin) {
+	      messageData = message.data;
+	      if (typeof messageData === 'string') {
+	        messageData = JSON.parse(messageData);
+	      }
+	      if (handlers[messageData.type]) {
+	        handlers[messageData.type](messageData.content);
+	      } else {
+	        console.log("cant handle type: " + messageData.type);
+	      }
+	    }
+	  }
+
+	  function disconnect() {
+	    connected = false;
+	    window.removeEventListener('message', receiveMessage);
+	  }
+
+	  // handle the case that targetWindowOrIframeEl is actually an <iframe> rather than a Window(Proxy) object
+	  // Note that if it *is* a WindowProxy, this probe will throw a SecurityException, but in that case
+	  // we also don't need to do anything
+	  try {
+	    targetWindowIsIframeElement = targetWindowOrIframeEl.constructor === HTMLIFrameElement;
+	  } catch (e) {
+	    targetWindowIsIframeElement = false;
+	  }
+
+	  if (targetWindowIsIframeElement) {
+	    // Infer the origin ONLY if the user did not supply an explicit origin, i.e., if the second
+	    // argument is empty or is actually a callback (meaning it is supposed to be the
+	    // afterConnectionCallback)
+	    if (!targetOrigin || targetOrigin.constructor === Function) {
+	      afterConnectedCallback = targetOrigin;
+	      targetOrigin = getOrigin(targetWindowOrIframeEl);
+	    }
+	  }
+
+	  // when we receive 'hello':
+	  addListener('hello', function() {
+	    connected = true;
+
+	    // send hello response
+	    post('hello');
+
+	    // give the user a chance to do things now that we are connected
+	    // note that is will happen before any queued messages
+	    if (afterConnectedCallback && typeof afterConnectedCallback === "function") {
+	      afterConnectedCallback();
+	    }
+
+	    // Now send any messages that have been queued up ...
+	    while(postMessageQueue.length > 0) {
+	      post(postMessageQueue.shift());
+	    }
+	  });
+
+	  window.addEventListener('message', receiveMessage, false);
+
+	  // Public API.
+	  return {
+	    post: post,
+	    addListener: addListener,
+	    removeListener: removeListener,
+	    disconnect: disconnect,
+	    getTargetWindow: getTargetWindow,
+	    targetOrigin: targetOrigin
+	  };
+	};
+
+
+/***/ },
+/* 19 */
+/***/ function(module, exports) {
+
+	var featureSupported = false;
+
+	(function () {
+	  var result = 0;
+
+	  if (!!window.postMessage) {
+	    try {
+	      // Safari 5.1 will sometimes throw an exception and sometimes won't, lolwut?
+	      // When it doesn't we capture the message event and check the
+	      // internal [[Class]] property of the message being passed through.
+	      // Safari will pass through DOM nodes as Null iOS safari on the other hand
+	      // passes it through as DOMWindow, gotcha.
+	      window.onmessage = function(e){
+	        var type = Object.prototype.toString.call(e.data);
+	        result = (type.indexOf("Null") != -1 || type.indexOf("DOMWindow") != -1) ? 1 : 0;
+	        featureSupported = {
+	          'structuredClones': result
+	        };
+	      };
+	      // Spec states you can't transmit DOM nodes and it will throw an error
+	      // postMessage implimentations that support cloned data will throw.
+	      window.postMessage(document.createElement("a"),"*");
+	    } catch(e) {
+	      // BBOS6 throws but doesn't pass through the correct exception
+	      // so check error message
+	      result = (e.DATA_CLONE_ERR || e.message == "Cannot post cyclic structures.") ? 1 : 0;
+	      featureSupported = {
+	        'structuredClones': result
+	      };
+	    }
+	  }
+	}());
+
+	exports.supported = function supported() {
+	  return featureSupported && featureSupported.structuredClones > 0;
+	};
+
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var structuredClone = __webpack_require__(19);
+	var HELLO_INTERVAL_LENGTH = 200;
+	var HELLO_TIMEOUT_LENGTH = 60000;
+
+	function IFrameEndpoint() {
+	  var parentOrigin;
+	  var listeners = {};
+	  var isInitialized = false;
+	  var connected = false;
+	  var postMessageQueue = [];
+	  var helloInterval;
+
+	  function postToTarget(message, target) {
+	    // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+	    //     https://github.com/Modernizr/Modernizr/issues/388
+	    //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+	    if (structuredClone.supported()) {
+	      window.parent.postMessage(message, target);
+	    } else {
+	      window.parent.postMessage(JSON.stringify(message), target);
+	    }
+	  }
+
+	  function post(type, content) {
+	    var message;
+	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+	    // as the first argument.
+	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+	      message = type;
+	    } else {
+	      message = {
+	        type: type,
+	        content: content
+	      };
+	    }
+	    if (connected) {
+	      postToTarget(message, parentOrigin);
+	    } else {
+	      postMessageQueue.push(message);
+	    }
+	  }
+
+	  // Only the initial 'hello' message goes permissively to a '*' target (because due to cross origin
+	  // restrictions we can't find out our parent's origin until they voluntarily send us a message
+	  // with it.)
+	  function postHello() {
+	    postToTarget({
+	      type: 'hello',
+	      origin: document.location.href.match(/(.*?\/\/.*?)\//)[1]
+	    }, '*');
+	  }
+
+	  function addListener(type, fn) {
+	    listeners[type] = fn;
+	  }
+
+	  function removeAllListeners() {
+	    listeners = {};
+	  }
+
+	  function getListenerNames() {
+	    return Object.keys(listeners);
+	  }
+
+	  function messageListener(message) {
+	      // Anyone can send us a message. Only pay attention to messages from parent.
+	      if (message.source !== window.parent) return;
+
+	      var messageData = message.data;
+
+	      if (typeof messageData === 'string') messageData = JSON.parse(messageData);
+
+	      // We don't know origin property of parent window until it tells us.
+	      if (!connected && messageData.type === 'hello') {
+	        // This is the return handshake from the embedding window.
+	        parentOrigin = messageData.origin;
+	        connected = true;
+	        stopPostingHello();
+	        while(postMessageQueue.length > 0) {
+	          post(postMessageQueue.shift());
+	        }
+	      }
+
+	      // Perhaps-redundantly insist on checking origin as well as source window of message.
+	      if (message.origin === parentOrigin) {
+	        if (listeners[messageData.type]) listeners[messageData.type](messageData.content);
+	      }
+	   }
+
+	   function disconnect() {
+	     connected = false;
+	     stopPostingHello();
+	     window.removeEventListener('message', messsageListener);
+	   }
+
+	  /**
+	    Initialize communication with the parent frame. This should not be called until the app's custom
+	    listeners are registered (via our 'addListener' public method) because, once we open the
+	    communication, the parent window may send any messages it may have queued. Messages for which
+	    we don't have handlers will be silently ignored.
+	  */
+	  function initialize() {
+	    if (isInitialized) {
+	      return;
+	    }
+	    isInitialized = true;
+	    if (window.parent === window) return;
+
+	    // We kick off communication with the parent window by sending a "hello" message. Then we wait
+	    // for a handshake (another "hello" message) from the parent window.
+	    postHello();
+	    startPostingHello();
+	    window.addEventListener('message', messageListener, false);
+	  }
+
+	  function startPostingHello() {
+	    if (helloInterval) {
+	      stopPostingHello();
+	    }
+	    helloInterval = window.setInterval(postHello, HELLO_INTERVAL_LENGTH);
+	    window.setTimeout(stopPostingHello, HELLO_TIMEOUT_LENGTH);
+	  }
+
+	  function stopPostingHello() {
+	    window.clearInterval(helloInterval);
+	    helloInterval = null;
+	  }
+
+	  // Public API.
+	  return {
+	    initialize        : initialize,
+	    getListenerNames  : getListenerNames,
+	    addListener       : addListener,
+	    removeAllListeners: removeAllListeners,
+	    disconnect        : disconnect,
+	    post              : post
+	  };
+	}
+
+	var instance = null;
+
+	// IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+	module.exports = function getIFrameEndpoint() {
+	  if (!instance) {
+	    instance = new IFrameEndpoint();
+	  }
+	  return instance;
+	};
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var ParentEndpoint = __webpack_require__(18);
+	var getIFrameEndpoint = __webpack_require__(20);
+
+	// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
+	// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
+	function getPseudoUUID() {
+	    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+	    var len = chars.length;
+	    var ret = [];
+
+	    for (var i = 0; i < 10; i++) {
+	        ret.push(chars[Math.floor(Math.random() * len)]);
+	    }
+	    return ret.join('');
+	}
+
+	module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindow, targetOrigin, phone) {
+	    var pendingCallbacks = Object.create({});
+
+	    // if it's a non-null object, rather than a function, 'handler' is really an options object
+	    if (handler && typeof handler === 'object') {
+	        namespace = handler.namespace;
+	        targetWindow = handler.targetWindow;
+	        targetOrigin = handler.targetOrigin;
+	        phone = handler.phone;
+	        handler = handler.handler;
+	    }
+
+	    if ( ! phone ) {
+	        if (targetWindow === window.parent) {
+	            phone = getIFrameEndpoint();
+	            phone.initialize();
+	        } else {
+	            phone = new ParentEndpoint(targetWindow, targetOrigin);
+	        }
+	    }
+
+	    phone.addListener(namespace, function(message) {
+	        var callbackObj;
+
+	        if (message.messageType === 'call' && typeof this.handler === 'function') {
+	            this.handler.call(undefined, message.value, function(returnValue) {
+	                phone.post(namespace, {
+	                    messageType: 'returnValue',
+	                    uuid: message.uuid,
+	                    value: returnValue
+	                });
+	            });
+	        } else if (message.messageType === 'returnValue') {
+	            callbackObj = pendingCallbacks[message.uuid];
+
+	            if (callbackObj) {
+	                window.clearTimeout(callbackObj.timeout);
+	                if (callbackObj.callback) {
+	                    callbackObj.callback.call(undefined, message.value);
+	                }
+	                pendingCallbacks[message.uuid] = null;
+	            }
+	        }
+	    }.bind(this));
+
+	    function call(message, callback) {
+	        var uuid = getPseudoUUID();
+
+	        pendingCallbacks[uuid] = {
+	            callback: callback,
+	            timeout: window.setTimeout(function() {
+	                if (callback) {
+	                    callback(undefined, new Error("IframePhone timed out waiting for reply"));
+	                }
+	            }, 2000)
+	        };
+
+	        phone.post(namespace, {
+	            messageType: 'call',
+	            uuid: uuid,
+	            value: message
+	        });
+	    }
+
+	    function disconnect() {
+	        phone.disconnect();
+	    }
+
+	    this.handler = handler;
+	    this.call = call.bind(this);
+	    this.disconnect = disconnect.bind(this);
+	};
+
 
 /***/ }
 /******/ ]);

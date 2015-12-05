@@ -6,6 +6,7 @@ import BreadCrumbs from './view-models/bread-crumbs.js';
 import Camera from './view-models/camera.js';
 import InteractionsManager from './interactions-manager.js';
 import {SF} from './constants.js';
+import {VELOCITY_LEN_SCALE} from './view-models/velocity-arrow.js';
 
 export default class {
   constructor(parentEl) {
@@ -80,6 +81,7 @@ export default class {
   }
 
   _initInteractions() {
+    // Earth dragging.
     this.interactionsManager.registerInteraction({
       test: () => {
         return this.interactionsManager.isUserPointing(this.planet.mesh);
@@ -91,6 +93,22 @@ export default class {
       stepHandler: () => {
         let coords = this.interactionsManager.pointerToXYPlane();
         this.dispatch.emit('planet.change', {x: coords.x / SF, y: coords.y / SF});
+      }
+    });
+    // Velocity arrow(head) dragging.
+    this.interactionsManager.registerInteraction({
+      test: () => {
+        return this.interactionsManager.isUserPointing(this.planet.velocityArrow.headMesh);
+      },
+      activationChangeHandler: (isActive) => {
+        this.planet.velocityArrow.setHighlighted(isActive);
+        document.body.style.cursor = isActive ? 'move' : '';
+      },
+      stepHandler: () => {
+        let coords = this.interactionsManager.pointerToXYPlane();
+        let vx = (coords.x - this.planet.position.x) / VELOCITY_LEN_SCALE;
+        let vy = (coords.y - this.planet.position.y) / VELOCITY_LEN_SCALE;
+        this.dispatch.emit('planet.change', {vx: vx, vy: vy});
       }
     });
   }
