@@ -1,4 +1,5 @@
 import {SF, PLANET_RADIUS} from '../constants.js';
+import VelocityArrow from './velocity-arrow.js';
 
 const DEF_COLOR = 0x1286CD;
 const DEF_EMISSIVE = 0x002135;
@@ -12,6 +13,9 @@ export default class {
     this.mesh = new THREE.Mesh(geometry, this.material);
     this.posObject = new THREE.Object3D();
     this.posObject.add(this.mesh);
+
+    this.velocityArrow = new VelocityArrow();
+    this.posObject.add(this.velocityArrow.rootObject);
   }
 
   get rootObject() {
@@ -25,6 +29,7 @@ export default class {
   setProps(props) {
     this.position.x = props.x * SF;
     this.position.y = props.y * SF;
+    this.velocityArrow.setProps(props);
   }
 
   setHighlighted(v) {

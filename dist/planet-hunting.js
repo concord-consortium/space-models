@@ -1323,6 +1323,12 @@
 
 	var _constants = __webpack_require__(5);
 
+	var _velocityArrow = __webpack_require__(23);
+
+	var _velocityArrow2 = _interopRequireDefault(_velocityArrow);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var DEF_COLOR = 0x1286CD;
@@ -1339,6 +1345,9 @@
 	    this.mesh = new THREE.Mesh(geometry, this.material);
 	    this.posObject = new THREE.Object3D();
 	    this.posObject.add(this.mesh);
+
+	    this.velocityArrow = new _velocityArrow2.default();
+	    this.posObject.add(this.velocityArrow.rootObject);
 	  }
 
 	  _createClass(_class, [{
@@ -1346,6 +1355,7 @@
 	    value: function setProps(props) {
 	      this.position.x = props.x * _constants.SF;
 	      this.position.y = props.y * _constants.SF;
+	      this.velocityArrow.setProps(props);
 	    }
 	  }, {
 	    key: 'setHighlighted',
@@ -11547,6 +11557,82 @@
 
 	}));
 
+
+/***/ },
+/* 21 */,
+/* 22 */,
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _constants = __webpack_require__(5);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var VELOCITY_LEN_SCALE = _constants.SF * 0.05;
+	var DEF_COLOR = 0x00ff00;
+	var DEF_EMISSIVE = 0x007700;
+
+	var _class = (function () {
+	  function _class() {
+	    _classCallCheck(this, _class);
+
+	    var radius = _constants.PLANET_RADIUS * _constants.SF / 4;
+	    var height = _constants.PLANET_RADIUS * _constants.SF * 4;
+	    var headRadius = radius * 3;
+	    var headHeight = height / 3;
+
+	    // Set height to 1, as it will be scaled later (#setProps).
+	    this.arrowGeometry = new THREE.CylinderGeometry(radius, radius, 1, 8);
+	    this.material = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
+	    this.arrowMesh = new THREE.Mesh(this.arrowGeometry, this.material);
+
+	    this.headGeometry = new THREE.CylinderGeometry(headRadius, 0, headHeight, 16);
+	    this.headMesh = new THREE.Mesh(this.headGeometry, this.material);
+
+	    this.pivot = new THREE.Object3D();
+	    this.pivot.add(this.headMesh);
+	    this.pivot.add(this.arrowMesh);
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setProps',
+	    value: function setProps(planet) {
+	      this.pivot.rotation.z = Math.atan2(planet.vx, -planet.vy);
+	      var len = Math.sqrt(planet.vx * planet.vx + planet.vy * planet.vy) * VELOCITY_LEN_SCALE;
+	      this.arrowMesh.scale.y = len;
+	      this.arrowMesh.position.y = -len * 0.5;
+	      this.headMesh.position.y = -len;
+	    }
+	  }, {
+	    key: 'setHighlighted',
+	    value: function setHighlighted(v) {
+	      this.material.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
+	      this.material.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
+	    }
+	  }, {
+	    key: 'rootObject',
+	    get: function get() {
+	      return this.pivot;
+	    }
+	  }, {
+	    key: 'position',
+	    get: function get() {
+	      return this.pivot.position;
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
 
 /***/ }
 /******/ ]);
