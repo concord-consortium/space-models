@@ -24,6 +24,15 @@ export default class {
     return this.camera.position;
   }
 
+  set locked(v) {
+    this.controls.enableRotate = !v;
+  }
+
+  // On change caused by user interaction.
+  onChange(callback) {
+    this.controls.addEventListener('change', callback);
+  }
+
   setProps(props) {
     if (this.oldProps.tilt !== props.tilt) {
       let angleDiff = this.position.angleTo(ZERO_TILT_VEC);

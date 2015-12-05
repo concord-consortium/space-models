@@ -2,6 +2,8 @@ import {SF, PLANET_RADIUS} from '../constants.js';
 
 const DEF_COLOR = 0x1286CD;
 const DEF_EMISSIVE = 0x002135;
+const HIGHLIGHT_COLOR = 0xff0000;
+const HIGHLIGHT_EMISSIVE = 0xbb3333;
 
 export default class {
   constructor() {
@@ -26,7 +28,7 @@ export default class {
   }
 
   setHighlighted(v) {
-    //this.material.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
-    //this.material.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
+    this.material.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
+    this.material.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
   }
 }

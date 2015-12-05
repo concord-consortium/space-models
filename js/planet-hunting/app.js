@@ -49,6 +49,9 @@ export default class {
     this.view.on('camera.change', (cameraState) => {
       this.setState({camera: cameraState});
     });
+    this.view.on('planet.change', (planetState) => {
+      this.setState({planet: planetState});
+    });
 
     this.tick = 0;
     this.isPlaying = false;
@@ -98,6 +101,8 @@ export default class {
       this.dispatch.emit('tick');
       this._emitStateChange();
     }
+    // User can interact with the model only when it's paused.
+    this.view.interactionEnabled = !this.isPlaying;
     this.view.setProps(this.state);
     this.view.render();
     this._rafID = requestAnimationFrame(this._rafCallback);

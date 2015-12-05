@@ -4,6 +4,8 @@ import Planet from './view-models/planet.js';
 import Grid from './view-models/grid.js';
 import BreadCrumbs from './view-models/bread-crumbs.js';
 import Camera from './view-models/camera.js';
+import InteractionsManager from './interactions-manager.js';
+import {SF} from './constants.js';
 
 export default class {
   constructor(parentEl) {
@@ -12,7 +14,7 @@ export default class {
     parentEl.appendChild(this.renderer.domElement);
 
     this.camera = new Camera(this.renderer.domElement);
-    this.camera.controls.addEventListener('change', () => {
+    this.camera.onChange(() => {
       this.dispatch.emit('camera.change', this.camera.getProps());
     });
 
@@ -20,6 +22,10 @@ export default class {
 
     this.scene = new THREE.Scene();
     this._initScene();
+
+    this.interactionEnabled = true;
+    this.interactionsManager = new InteractionsManager(this.renderer.domElement, this.camera);
+    this._initInteractions();
 
     this.resize();
   }
@@ -46,10 +52,10 @@ export default class {
 
   render() {
     this.camera.update();
-    //if (this._interactionHandler) {
-    //  this._interactionHandler.checkInteraction();
-    //}
     this.renderer.render(this.scene, this.camera.camera);
+    if (this.interactionEnabled) {
+      this.interactionsManager.checkInteraction();
+    }
   }
 
   // Resizes canvas to fill its parent.
@@ -71,6 +77,22 @@ export default class {
     this.scene.add(this.planet.rootObject);
     this.scene.add(this.breadCrumbs.rootObject);
     this.scene.add(new THREE.AmbientLight(0x202020));
+  }
+
+  _initInteractions() {
+    this.interactionsManager.registerInteraction({
+      test: () => {
+        return this.interactionsManager.isUserPointing(this.planet.mesh);
+      },
+      activationChangeHandler: (isActive) => {
+        this.planet.setHighlighted(isActive);
+        document.body.style.cursor = isActive ? 'move' : '';
+      },
+      stepHandler: () => {
+        let coords = this.interactionsManager.pointerToXYPlane();
+        this.dispatch.emit('planet.change', {x: coords.x / SF, y: coords.y / SF});
+      }
+    });
   }
 }
 
