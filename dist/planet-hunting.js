@@ -955,6 +955,10 @@
 	}
 
 	function starCamVelocity(star, camera, timestep) {
+	  if (camera.tilt === 90) {
+	    // Special case, we don't want any numerical errors here even for large timestep.
+	    return 0;
+	  }
 	  var cameraX = 0;
 	  var cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
 	  var cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;

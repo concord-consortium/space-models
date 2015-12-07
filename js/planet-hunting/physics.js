@@ -41,6 +41,10 @@ export function makeCircularOrbit(planet) {
 }
 
 export function starCamVelocity(star, camera, timestep) {
+  if (camera.tilt === 90) {
+    // Special case, we don't want any numerical errors here even for large timestep.
+    return 0;
+  }
   let cameraX = 0;
   let cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
   let cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
