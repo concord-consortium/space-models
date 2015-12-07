@@ -22,7 +22,7 @@ export default class {
     this.labels = [];
 
     for (let i = 1; i <= this.ticks; i++) {
-      let lbl = new Label((maxValue * i / this.ticks).toFixed(1) + ' AU');
+      let lbl = new Label((maxValue * i / this.ticks).toFixed(2) + ' AU');
       lbl.position.y = this.size * SF * i / this.ticks;
       this.labels.push(lbl);
       this.mesh.add(lbl.rootObject);

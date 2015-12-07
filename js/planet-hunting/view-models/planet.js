@@ -29,21 +29,22 @@ export default class {
 
   get scale() {
     // We always keep scale.x equal to scale.y and scale.y, take a look at setter.
-    return this.rootObject.scale.x;
+    return this.mesh.scale.x;
   }
 
   set scale(v) {
-    this.rootObject.scale.set(v, v, v);
+    this.mesh.scale.set(v, v, v);
   }
 
   // Transforms velocity defined in view units into AU (model units).
   velocityViewUnit2AU(vx, vy) {
-    return {vx: vx / VELOCITY_LEN_SCALE / this.scale, vy: vy / VELOCITY_LEN_SCALE / this.scale};
+    return {vx: vx / VELOCITY_LEN_SCALE, vy: vy / VELOCITY_LEN_SCALE};
   }
 
   setProps(props) {
     this.position.x = props.x * SF;
     this.position.y = props.y * SF;
+    this.scale = 1 + props.diameter / 50;
     this.velocityArrow.setProps(props);
   }
 

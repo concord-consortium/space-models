@@ -35,7 +35,7 @@ export default class {
     this.planet.setProps(props.planet);
     this.camera.setProps(props.camera);
 
-    this._setupZoomLevel(props.camera.distance);
+    this._setupZoomLevel(props.camera.zoom);
   }
 
   getCameraTilt() {
@@ -69,12 +69,9 @@ export default class {
   }
 
   // Updates grid size and makes certain objects bigger so they are still visible.
-  _setupZoomLevel(cameraDistance) {
-    let gridSize = gridSizeForCameraDist(cameraDistance);
+  _setupZoomLevel(zoom) {
+    let gridSize = gridSizeForZoom(zoom);
     this.grid.size = gridSize;
-    let objectScale = objectScaleForGridSize(gridSize);
-    this.planet.scale = objectScale;
-    this.star.scale = objectScale;
   }
 
   _initScene() {
@@ -124,24 +121,14 @@ export default class {
   }
 }
 
-function gridSizeForCameraDist(camDist) {
-  if (camDist < 8) {
-    return 2;
-  } else if (camDist < 64) {
-    return 8;
-  } else {
-    return 64;
-  }
-}
-
-function objectScaleForGridSize(gridSize) {
-  if (gridSize <= 2) {
+function gridSizeForZoom(zoom) {
+  if (zoom >= 2) {
     return 1;
-  } else if (gridSize <= 8) {
-    return 4;
-  } else {
-    return 32;
   }
+  if (zoom >= 0.5) {
+    return 2;
+  }
+  return 4;
 }
 
 function webglAvailable() {

@@ -29,7 +29,8 @@ const DEF_STATE = {
   },
   camera: {
     tilt: 90,        // [ deg ], between 0 and 90
-    distance: 2.5    // [ AU ]
+    distance: 10,    // [ AU ]
+    zoom: 1
   },
   telescope: {
     precision: 100,            // [0..100], affects starCamVelocity and lightIntensity
