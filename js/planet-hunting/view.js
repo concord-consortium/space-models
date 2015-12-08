@@ -1,3 +1,4 @@
+import $ from 'jquery';
 import EventEmitter from 'eventemitter2';
 import Star from './view-models/star.js';
 import Planet from './view-models/planet.js';
@@ -7,11 +8,17 @@ import Camera from './view-models/camera.js';
 import InteractionsManager from './interactions-manager.js';
 import {SF} from './constants.js';
 
+// Let user know that he can change the tilt.
+const DEFAULT_CURSOR = 'ns-resize';
+
 export default class {
   constructor(parentEl) {
-    this.renderer = webglAvailable() ? new THREE.WebGLRenderer({antialias: true})
+    this.renderer = webglAvailable() ? new THREE.WebGLRenderer()
                                      : new THREE.CanvasRenderer();
+    this.renderer.setPixelRatio(window.devicePixelRatio);
     parentEl.appendChild(this.renderer.domElement);
+
+    this._addHTMLDisplay(parentEl);
 
     this.camera = new Camera(this.renderer.domElement);
     this.camera.onChange(() => {
@@ -27,6 +34,7 @@ export default class {
     this.interactionsManager = new InteractionsManager(this.renderer.domElement, this.camera);
     this._initInteractions();
 
+    this._setCursor(DEFAULT_CURSOR);
     this.resize();
   }
 
@@ -36,6 +44,8 @@ export default class {
     this.camera.setProps(props.camera);
 
     this._setupZoomLevel(props.camera.zoom);
+
+    this._showTilt(props.camera.tilt.toFixed(2));
   }
 
   getCameraTilt() {
@@ -66,6 +76,36 @@ export default class {
     let newHeight = parent.clientHeight;
     this.renderer.setSize(newWidth, newHeight);
     this.camera.setSize(newWidth, newHeight);
+    this.$display.css('font-size', (newHeight / 26) + 'px');
+  }
+
+  _addHTMLDisplay(parentEl) {
+    this.$display = $('<div class="display">The tilt is <span class="tilt-val"></span> degrees</div>');
+    this.$display.css({
+      position: 'absolute',
+      bottom: '5px',
+      right: '5px',
+      color: '#fff',
+      fontFamily: 'Arial',
+      pointerEvents: 'none'
+    });
+    this.$display.appendTo(parentEl);
+    this.$tiltVal = this.$display.find('.tilt-val');
+    this.$tiltVal.css({
+      fontWeight: 'bold'
+    })
+  }
+
+  _setCursor(cursor) {
+    if (!cursor) cursor = DEFAULT_CURSOR;
+    this.renderer.domElement.style.cursor = cursor;
+  }
+
+  _showTilt(tilt) {
+    if (this._oldTilt !== tilt) {
+      this.$tiltVal.text(tilt);
+      this._oldTilt = tilt;
+    }
   }
 
   // Updates grid size and makes certain objects bigger so they are still visible.
@@ -94,7 +134,7 @@ export default class {
       },
       activationChangeHandler: (isActive) => {
         this.planet.setHighlighted(isActive);
-        document.body.style.cursor = isActive ? 'move' : '';
+        this._setCursor(isActive ? 'move' : '');
       },
       stepHandler: () => {
         let coords = this.interactionsManager.pointerToXYPlane();
@@ -108,7 +148,7 @@ export default class {
       },
       activationChangeHandler: (isActive) => {
         this.planet.velocityArrow.setHighlighted(isActive);
-        document.body.style.cursor = isActive ? 'move' : '';
+        this._setCursor(isActive ? 'move' : '');
       },
       stepHandler: () => {
         let coords = this.interactionsManager.pointerToXYPlane();

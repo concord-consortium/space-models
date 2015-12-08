@@ -1087,6 +1087,10 @@
 	  value: true
 	});
 
+	var _jquery = __webpack_require__(17);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
 	var _eventemitter = __webpack_require__(2);
 
 	var _eventemitter2 = _interopRequireDefault(_eventemitter);
@@ -1121,14 +1125,20 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+	// Let user know that he can change the tilt.
+	var DEFAULT_CURSOR = 'ns-resize';
+
 	var _class = (function () {
 	  function _class(parentEl) {
 	    var _this = this;
 
 	    _classCallCheck(this, _class);
 
-	    this.renderer = webglAvailable() ? new THREE.WebGLRenderer({ antialias: true }) : new THREE.CanvasRenderer();
+	    this.renderer = webglAvailable() ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
+	    this.renderer.setPixelRatio(window.devicePixelRatio);
 	    parentEl.appendChild(this.renderer.domElement);
+
+	    this._addHTMLDisplay(parentEl);
 
 	    this.camera = new _camera2.default(this.renderer.domElement);
 	    this.camera.onChange(function () {
@@ -1144,6 +1154,7 @@
 	    this.interactionsManager = new _interactionsManager2.default(this.renderer.domElement, this.camera);
 	    this._initInteractions();
 
+	    this._setCursor(DEFAULT_CURSOR);
 	    this.resize();
 	  }
 
@@ -1155,6 +1166,8 @@
 	      this.camera.setProps(props.camera);
 
 	      this._setupZoomLevel(props.camera.zoom);
+
+	      this._showTilt(props.camera.tilt.toFixed(2));
 	    }
 	  }, {
 	    key: 'getCameraTilt',
@@ -1194,6 +1207,39 @@
 	      var newHeight = parent.clientHeight;
 	      this.renderer.setSize(newWidth, newHeight);
 	      this.camera.setSize(newWidth, newHeight);
+	      this.$display.css('font-size', newHeight / 26 + 'px');
+	    }
+	  }, {
+	    key: '_addHTMLDisplay',
+	    value: function _addHTMLDisplay(parentEl) {
+	      this.$display = (0, _jquery2.default)('<div class="display">The tilt is <span class="tilt-val"></span> degrees</div>');
+	      this.$display.css({
+	        position: 'absolute',
+	        bottom: '5px',
+	        right: '5px',
+	        color: '#fff',
+	        fontFamily: 'Arial',
+	        pointerEvents: 'none'
+	      });
+	      this.$display.appendTo(parentEl);
+	      this.$tiltVal = this.$display.find('.tilt-val');
+	      this.$tiltVal.css({
+	        fontWeight: 'bold'
+	      });
+	    }
+	  }, {
+	    key: '_setCursor',
+	    value: function _setCursor(cursor) {
+	      if (!cursor) cursor = DEFAULT_CURSOR;
+	      this.renderer.domElement.style.cursor = cursor;
+	    }
+	  }, {
+	    key: '_showTilt',
+	    value: function _showTilt(tilt) {
+	      if (this._oldTilt !== tilt) {
+	        this.$tiltVal.text(tilt);
+	        this._oldTilt = tilt;
+	      }
 	    }
 
 	    // Updates grid size and makes certain objects bigger so they are still visible.
@@ -1229,7 +1275,7 @@
 	        },
 	        activationChangeHandler: function activationChangeHandler(isActive) {
 	          _this2.planet.setHighlighted(isActive);
-	          document.body.style.cursor = isActive ? 'move' : '';
+	          _this2._setCursor(isActive ? 'move' : '');
 	        },
 	        stepHandler: function stepHandler() {
 	          var coords = _this2.interactionsManager.pointerToXYPlane();
@@ -1243,7 +1289,7 @@
 	        },
 	        activationChangeHandler: function activationChangeHandler(isActive) {
 	          _this2.planet.velocityArrow.setHighlighted(isActive);
-	          document.body.style.cursor = isActive ? 'move' : '';
+	          _this2._setCursor(isActive ? 'move' : '');
 	        },
 	        stepHandler: function stepHandler() {
 	          var coords = _this2.interactionsManager.pointerToXYPlane();
