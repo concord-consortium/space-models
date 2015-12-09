@@ -1,10 +1,16 @@
 import {deepExtend} from './utils.js';
 import {updatePlanet, updateStar, updateTelescope} from './physics.js';
 
-export function tick(state) {
-  updatePlanet(state.star, state.planet, state.timestep);
-  state.time += state.timestep;
+const MAX_TIMESTEP = 0.005;
 
+export function tick(state) {
+  // Make sure that integration isn't using too big timestep, so it's still reasonably accurate.
+  let dt = Math.min(MAX_TIMESTEP, state.timestep);
+  let steps = Math.round(state.timestep / dt);
+  for (let i = 0; i < steps; i++) {
+    updatePlanet(state.star, state.planet, dt);
+    state.time += dt;
+  }
   calculateOutputs(state);
 }
 

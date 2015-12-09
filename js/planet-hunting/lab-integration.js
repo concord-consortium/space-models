@@ -2,8 +2,11 @@ import {extend} from './utils.js';
 import iframePhone from 'iframe-phone';
 import {planetMass} from './physics.js';
 
+const LAB_OUTPUTS = ['time', 'planet.mass', 'camera.tilt', 'telescope.starCamVelocity', 'telescope.lightIntensity'];
+
 export default function(app) {
   let phone = iframePhone.getIFrameEndpoint();
+  let propertiesUpdateComingFromLab = false;
 
   app.on('play', function () {
     phone.post('play.iframe-model');
@@ -11,11 +14,14 @@ export default function(app) {
   app.on('stop', function () {
     phone.post('stop.iframe-model');
   });
-  app.on('tick', function () {
-    phone.post('tick');
+  app.on('tick', function (newState) {
+    phone.post('tick', {outputs: getLabOutputs(newState)});
   });
   app.on('state.change', function (newState) {
-    phone.post('outputs', getOutputs(newState));
+    if (!propertiesUpdateComingFromLab) {
+      phone.post('properties', getLabProperties(newState));
+    }
+    phone.post('outputs', getLabOutputs(newState));
   });
 
   phone.addListener('play', function () {
@@ -33,18 +39,34 @@ export default function(app) {
       state = state[names.shift()] = {};
     }
     state[names[0]] = content.value;
+
+    propertiesUpdateComingFromLab = true;
     app.setState(stateObj);
+    propertiesUpdateComingFromLab = false;
   });
   phone.addListener('makeCircularOrbit', function () {
     app.makeCircularOrbit();
   });
+  phone.addListener('loadPreset', function (name) {
+    app.loadPreset(name);
+  });
 
   phone.initialize();
 
-  phone.post('outputs', getOutputs(app.state));
+  phone.post('outputs', getLabOutputs(app.state));
 }
 
-function getOutputs(state) {
+// Note that planet hunting keeps both outputs and state variables together.
+// Lab expects them to be divided.
+function getLabProperties(state) {
+  let props = flattenObject(state);
+  for (let output of LAB_OUTPUTS) {
+    delete props[output];
+  }
+  return props;
+}
+
+function getLabOutputs(state) {
   let outputs = {};
   outputs['time'] = state.time;
   outputs['planet.mass'] = planetMass(state.planet);
@@ -52,4 +74,18 @@ function getOutputs(state) {
   outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
   outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
   return outputs;
+}
+
+// Flattens state, as Lab doesn't support nested properties.
+// E.g. {timestep: 1, planet: {x: 1, y: 2}} => {'timestep': 1, 'planet.x': 1, 'planet.y': 2}
+function flattenObject(value, prefix = null, result = {}) {
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    // Simple value like number, string or array.
+    result[prefix] = value;
+    return;
+  }
+  Object.keys(value).forEach(function (key) {
+    flattenObject(value[key], prefix ? prefix + '.' + key : key, result);
+  });
+  return result;
 }

@@ -3,7 +3,7 @@ import {SF} from '../constants.js';
 const ROTATION_AXIS = new THREE.Vector3(1, 0, 0);
 const ZERO_TILT_VEC = new THREE.Vector3(0, -1, 0);
 const ZOOM_SPEED = 1.013;
-const ZOOM_MIN = 0.3;
+const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 15;
 
 export default class {

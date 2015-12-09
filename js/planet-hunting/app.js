@@ -3,6 +3,7 @@ import {deepExtend} from './utils.js';
 import {makeCircularOrbit} from './physics.js';
 import * as engine from './engine.js';
 import View from './view.js';
+import presets from './presets.js';
 
 const BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
 
@@ -11,7 +12,7 @@ const SUN_MASS = 1.99e30;   // [ kg ]
 
 const DEF_STATE = {
   time: 0,                      // [ year ]
-  timestep: 0.001,              // [ year ]
+  timestep: 0.01,              // [ year ]
   star: {
     x: 'output',                // [ AU ]
     y: 'output',                // [ AU ]
@@ -78,6 +79,10 @@ export default class {
     this.dispatch.emit('stop');
   }
 
+  loadPreset(name) {
+    this.setState(presets[name]);
+  }
+
   resize() {
     this.view.resize();
   }
@@ -99,8 +104,7 @@ export default class {
         this.view.addBreadCrumb(this.state.planet.x, this.state.planet.y);
       }
       this.tick += 1;
-      this.dispatch.emit('tick');
-      this._emitStateChange();
+      this.dispatch.emit('tick', this.state);
     }
     // User can interact with the model only when it's paused.
     this.view.interactionEnabled = !this.isPlaying;

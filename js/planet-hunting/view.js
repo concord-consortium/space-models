@@ -168,7 +168,7 @@ function gridSizeForZoom(zoom) {
   if (zoom >= 0.5) {
     return 2;
   }
-  return 4;
+  return 5;
 }
 
 function webglAvailable() {
