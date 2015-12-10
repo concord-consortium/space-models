@@ -10,7 +10,7 @@ import InteractionsManager from './interactions-manager.js';
 import {SF} from './constants.js';
 
 // Let user know that he can change the tilt.
-const DEFAULT_CURSOR = 'ns-resize';
+const TILT_CURSOR = 'ns-resize';
 
 export default class {
   constructor(parentEl) {
@@ -35,7 +35,6 @@ export default class {
     this.interactionsManager = new InteractionsManager(this.renderer.domElement, this.camera);
     this._initInteractions();
 
-    this._setCursor(DEFAULT_CURSOR);
     this.resize();
   }
 
@@ -47,7 +46,7 @@ export default class {
 
     this._setupZoomLevel(props.camera.zoom);
 
-    this._showTilt(props.camera.tilt.toFixed(2));
+    this._showTilt(props.camera.tiltLocked ? false : props.camera.tilt.toFixed(2));
   }
 
   getCameraTilt() {
@@ -103,14 +102,24 @@ export default class {
   }
 
   _setCursor(cursor) {
-    if (!cursor) cursor = DEFAULT_CURSOR;
-    this.renderer.domElement.style.cursor = cursor;
+    this.renderer.domElement.style.cursor = cursor || this._mainCursor;
   }
 
+  // If 'tilt' is a number, it shows it at the bottom of the screen.
+  // If it's false, it hides the display.
   _showTilt(tilt) {
-    if (this._oldTilt !== tilt) {
+    if (!this._tilt && tilt) {
+      this.$display.show();
+      this._mainCursor = TILT_CURSOR;
+      this._setCursor();
+    } else if (this._tilt && !tilt) {
+      this.$display.hide();
+      this._mainCursor = '';
+      this._setCursor();
+    }
+    if (this._tilt !== tilt) {
       this.$tiltVal.text(tilt);
-      this._oldTilt = tilt;
+      this._tilt = tilt;
     }
   }
 
@@ -142,7 +151,7 @@ export default class {
       },
       activationChangeHandler: (isActive) => {
         this.planet.setHighlighted(isActive);
-        this._setCursor(isActive ? 'move' : '');
+        this._setCursor(isActive ? 'move' : null);
       },
       stepHandler: () => {
         let coords = this.interactionsManager.pointerToXYPlane();
@@ -156,7 +165,7 @@ export default class {
       },
       activationChangeHandler: (isActive) => {
         this.planet.velocityArrow.setHighlighted(isActive);
-        this._setCursor(isActive ? 'move' : '');
+        this._setCursor(isActive ? 'move' : null);
       },
       stepHandler: () => {
         let coords = this.interactionsManager.pointerToXYPlane();

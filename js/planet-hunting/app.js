@@ -34,6 +34,7 @@ const DEF_STATE = {
     rocky:    true
   },
   camera: {
+    tiltLocked: false,
     tilt: 90,        // [ deg ], between 0 and 90
     distance: 10,    // [ AU ]
     zoom: 1

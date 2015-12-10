@@ -41,9 +41,9 @@ export default class {
     }
 
     if (anyInteractionActive) {
-      this.camera.locked = true;
+      this.camera.lockedForInteraction = true;
     } else {
-      this.camera.locked = false;
+      this.camera.lockedForInteraction = false;
     }
   }
 

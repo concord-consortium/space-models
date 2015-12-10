@@ -13,25 +13,73 @@ export default class {
 
     this.controls = new THREE.OrbitControls(this.camera, canvas);
     this.controls.enablePan = false;
-    this.controls.enableZoom = false;
     this.controls.minPolarAngle = Math.PI * 0.5;
     this.controls.maxPolarAngle = Math.PI;
     this.controls.minAzimuthAngle = 0;
     this.controls.maxAzimuthAngle = 0;
     this.controls.rotateSpeed = 0.5;
 
-    this.oldProps = {};
     this.changeCallback = function() { /* noop */ };
 
-    canvas.addEventListener('mousewheel', this.onMouseWheel.bind(this), false);
+    // Use custom zooming which changes camera lens instead of camera position.
+    this.controls.enableZoom = false;
+    this.zoomLocked = false;
+    canvas.addEventListener('mousewheel', this._onMouseWheel.bind(this), false);
+    canvas.addEventListener('MozMousePixelScroll', this._onMouseWheel.bind(this), false);
   }
 
   get position() {
     return this.camera.position;
   }
 
-  set locked(v) {
+  set tiltLocked(v) {
+    this._tiltLocked = v;
     this.controls.enableRotate = !v;
+  }
+
+  get tiltLocked() {
+    // We can't return !this.controls.enableRotate, as this value is also modified by #lockedForInteraction!
+    return this._tiltLocked;
+  }
+
+  // It *temporarily* locks tilt and zoom change.
+  set lockedForInteraction(v) {
+    // We can't use #tiltLocked, as we want to preserver value of this property. This is only temporal lock.
+    this.controls.enableRotate = v ? false : !this._tiltLocked;
+    this.zoomLocked = v;
+  }
+
+  set tilt(v) {
+    if (v === this._tilt) return;
+    this._tilt = v;
+    let angleDiff = this.position.angleTo(ZERO_TILT_VEC);
+    let tiltInRad = v * Math.PI / 180;
+    this.position.applyAxisAngle(ROTATION_AXIS, angleDiff - tiltInRad);
+    this.controls.update();
+  }
+
+  get tilt() {
+    return this.position.angleTo(ZERO_TILT_VEC) * 180 / Math.PI;
+  }
+
+  set distance(v) {
+    if (v === this._distance) return;
+    this._distance = v;
+    this.position.setLength(v * SF);
+  }
+
+  get distance() {
+    return this.position.length() / SF;
+  }
+
+  set zoom(v) {
+    if (v === this.camera.zoom) return;
+    this.camera.zoom = v;
+    this.camera.updateProjectionMatrix();
+  }
+
+  get zoom() {
+    return this.camera.zoom;
   }
 
   // On change caused by user interaction.
@@ -41,37 +89,20 @@ export default class {
   }
 
   setProps(props) {
-    if (this.oldProps.tilt !== props.tilt) {
-      let angleDiff = this.position.angleTo(ZERO_TILT_VEC);
-      let tiltInRad = props.tilt * Math.PI / 180;
-      this.position.applyAxisAngle(ROTATION_AXIS, angleDiff - tiltInRad);
-      this.controls.update();
-      this.oldProps.tilt = props.tilt;
-    }
-    if (this.oldProps.distance !== props.distance) {
-      this.position.setLength(props.distance * SF);
-      this.oldProps.distance = props.distance;
-    }
-    if (this.oldProps.zoom !== props.zoom) {
-      this.camera.zoom = props.zoom;
-      this.camera.updateProjectionMatrix();
-    }
+    this.tilt = props.tilt;
+    this.tiltLocked = props.tiltLocked;
+    this.zoom = props.zoom;
+    this.distance = props.distance;
   }
 
   getProps() {
-    let props = {};
-    props.tilt = this.position.angleTo(ZERO_TILT_VEC) * 180 / Math.PI;
-    props.distance = this.position.length() / SF;
-    props.zoom = this.camera.zoom;
-    return props;
-  }
-
-  // Tilt is defined in degrees and it has a bit different range than control's polar angle
-  // (from 0 to 90, while the polar angle is between PI/2 and PI).
-  setTilt(tiltInDeg) {
-    let newPolarAngle = (180 - tiltInDeg) * Math.PI / 180;
-    let polarAngleDiff = newPolarAngle - this.controls.getPolarAngle();
-    this.controls.constraint.rotateUp(polarAngleDiff);
+    let self = this;
+    return {
+      tilt: self.tilt,
+      tiltLocked: self.tiltLocked,
+      distance: self.distance,
+      zoom: self.zoom
+    };
   }
 
   setSize(newWidth, newHeight) {
@@ -95,8 +126,8 @@ export default class {
     this.changeCallback();
   }
 
-
-  onMouseWheel(event) {
+  _onMouseWheel(event) {
+    if (this.zoomLocked) return;
     event.preventDefault();
     event.stopPropagation();
     let delta = 0;

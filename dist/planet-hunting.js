@@ -138,6 +138,7 @@
 	    rocky: true
 	  },
 	  camera: {
+	    tiltLocked: false,
 	    tilt: 90, // [ deg ], between 0 and 90
 	    distance: 10, // [ AU ]
 	    zoom: 1
@@ -916,8 +917,6 @@
 	  return extend.apply(null, args);
 	}
 
-	window.ext = extend;
-
 	function isPlainObject(obj) {
 	  return (typeof obj === "undefined" ? "undefined" : _typeof(obj)) === "object";
 	}
@@ -1168,7 +1167,7 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	// Let user know that he can change the tilt.
-	var DEFAULT_CURSOR = 'ns-resize';
+	var TILT_CURSOR = 'ns-resize';
 
 	var _class = (function () {
 	  function _class(parentEl) {
@@ -1196,7 +1195,6 @@
 	    this.interactionsManager = new _interactionsManager2.default(this.renderer.domElement, this.camera);
 	    this._initInteractions();
 
-	    this._setCursor(DEFAULT_CURSOR);
 	    this.resize();
 	  }
 
@@ -1210,7 +1208,7 @@
 
 	      this._setupZoomLevel(props.camera.zoom);
 
-	      this._showTilt(props.camera.tilt.toFixed(2));
+	      this._showTilt(props.camera.tiltLocked ? false : props.camera.tilt.toFixed(2));
 	    }
 	  }, {
 	    key: 'getCameraTilt',
@@ -1278,15 +1276,27 @@
 	  }, {
 	    key: '_setCursor',
 	    value: function _setCursor(cursor) {
-	      if (!cursor) cursor = DEFAULT_CURSOR;
-	      this.renderer.domElement.style.cursor = cursor;
+	      this.renderer.domElement.style.cursor = cursor || this._mainCursor;
 	    }
+
+	    // If 'tilt' is a number, it shows it at the bottom of the screen.
+	    // If it's false, it hides the display.
+
 	  }, {
 	    key: '_showTilt',
 	    value: function _showTilt(tilt) {
-	      if (this._oldTilt !== tilt) {
+	      if (!this._tilt && tilt) {
+	        this.$display.show();
+	        this._mainCursor = TILT_CURSOR;
+	        this._setCursor();
+	      } else if (this._tilt && !tilt) {
+	        this.$display.hide();
+	        this._mainCursor = '';
+	        this._setCursor();
+	      }
+	      if (this._tilt !== tilt) {
 	        this.$tiltVal.text(tilt);
-	        this._oldTilt = tilt;
+	        this._tilt = tilt;
 	      }
 	    }
 
@@ -1325,7 +1335,7 @@
 	        },
 	        activationChangeHandler: function activationChangeHandler(isActive) {
 	          _this2.planet.setHighlighted(isActive);
-	          _this2._setCursor(isActive ? 'move' : '');
+	          _this2._setCursor(isActive ? 'move' : null);
 	        },
 	        stepHandler: function stepHandler() {
 	          var coords = _this2.interactionsManager.pointerToXYPlane();
@@ -1339,7 +1349,7 @@
 	        },
 	        activationChangeHandler: function activationChangeHandler(isActive) {
 	          _this2.planet.velocityArrow.setHighlighted(isActive);
-	          _this2._setCursor(isActive ? 'move' : '');
+	          _this2._setCursor(isActive ? 'move' : null);
 	        },
 	        stepHandler: function stepHandler() {
 	          var coords = _this2.interactionsManager.pointerToXYPlane();
@@ -11173,17 +11183,19 @@
 
 	    this.controls = new THREE.OrbitControls(this.camera, canvas);
 	    this.controls.enablePan = false;
-	    this.controls.enableZoom = false;
 	    this.controls.minPolarAngle = Math.PI * 0.5;
 	    this.controls.maxPolarAngle = Math.PI;
 	    this.controls.minAzimuthAngle = 0;
 	    this.controls.maxAzimuthAngle = 0;
 	    this.controls.rotateSpeed = 0.5;
 
-	    this.oldProps = {};
 	    this.changeCallback = function () {/* noop */};
 
-	    canvas.addEventListener('mousewheel', this.onMouseWheel.bind(this), false);
+	    // Use custom zooming which changes camera lens instead of camera position.
+	    this.controls.enableZoom = false;
+	    this.zoomLocked = false;
+	    canvas.addEventListener('mousewheel', this._onMouseWheel.bind(this), false);
+	    canvas.addEventListener('MozMousePixelScroll', this._onMouseWheel.bind(this), false);
 	  }
 
 	  _createClass(_class, [{
@@ -11197,41 +11209,21 @@
 	  }, {
 	    key: 'setProps',
 	    value: function setProps(props) {
-	      if (this.oldProps.tilt !== props.tilt) {
-	        var angleDiff = this.position.angleTo(ZERO_TILT_VEC);
-	        var tiltInRad = props.tilt * Math.PI / 180;
-	        this.position.applyAxisAngle(ROTATION_AXIS, angleDiff - tiltInRad);
-	        this.controls.update();
-	        this.oldProps.tilt = props.tilt;
-	      }
-	      if (this.oldProps.distance !== props.distance) {
-	        this.position.setLength(props.distance * _constants.SF);
-	        this.oldProps.distance = props.distance;
-	      }
-	      if (this.oldProps.zoom !== props.zoom) {
-	        this.camera.zoom = props.zoom;
-	        this.camera.updateProjectionMatrix();
-	      }
+	      this.tilt = props.tilt;
+	      this.tiltLocked = props.tiltLocked;
+	      this.zoom = props.zoom;
+	      this.distance = props.distance;
 	    }
 	  }, {
 	    key: 'getProps',
 	    value: function getProps() {
-	      var props = {};
-	      props.tilt = this.position.angleTo(ZERO_TILT_VEC) * 180 / Math.PI;
-	      props.distance = this.position.length() / _constants.SF;
-	      props.zoom = this.camera.zoom;
-	      return props;
-	    }
-
-	    // Tilt is defined in degrees and it has a bit different range than control's polar angle
-	    // (from 0 to 90, while the polar angle is between PI/2 and PI).
-
-	  }, {
-	    key: 'setTilt',
-	    value: function setTilt(tiltInDeg) {
-	      var newPolarAngle = (180 - tiltInDeg) * Math.PI / 180;
-	      var polarAngleDiff = newPolarAngle - this.controls.getPolarAngle();
-	      this.controls.constraint.rotateUp(polarAngleDiff);
+	      var self = this;
+	      return {
+	        tilt: self.tilt,
+	        tiltLocked: self.tiltLocked,
+	        distance: self.distance,
+	        zoom: self.zoom
+	      };
 	    }
 	  }, {
 	    key: 'setSize',
@@ -11259,8 +11251,9 @@
 	      this.changeCallback();
 	    }
 	  }, {
-	    key: 'onMouseWheel',
-	    value: function onMouseWheel(event) {
+	    key: '_onMouseWheel',
+	    value: function _onMouseWheel(event) {
+	      if (this.zoomLocked) return;
 	      event.preventDefault();
 	      event.stopPropagation();
 	      var delta = 0;
@@ -11283,9 +11276,57 @@
 	      return this.camera.position;
 	    }
 	  }, {
-	    key: 'locked',
+	    key: 'tiltLocked',
 	    set: function set(v) {
+	      this._tiltLocked = v;
 	      this.controls.enableRotate = !v;
+	    },
+	    get: function get() {
+	      // We can't return !this.controls.enableRotate, as this value is also modified by #lockedForInteraction!
+	      return this._tiltLocked;
+	    }
+
+	    // It *temporarily* locks tilt and zoom change.
+
+	  }, {
+	    key: 'lockedForInteraction',
+	    set: function set(v) {
+	      // We can't use #tiltLocked, as we want to preserver value of this property. This is only temporal lock.
+	      this.controls.enableRotate = v ? false : !this._tiltLocked;
+	      this.zoomLocked = v;
+	    }
+	  }, {
+	    key: 'tilt',
+	    set: function set(v) {
+	      if (v === this._tilt) return;
+	      this._tilt = v;
+	      var angleDiff = this.position.angleTo(ZERO_TILT_VEC);
+	      var tiltInRad = v * Math.PI / 180;
+	      this.position.applyAxisAngle(ROTATION_AXIS, angleDiff - tiltInRad);
+	      this.controls.update();
+	    },
+	    get: function get() {
+	      return this.position.angleTo(ZERO_TILT_VEC) * 180 / Math.PI;
+	    }
+	  }, {
+	    key: 'distance',
+	    set: function set(v) {
+	      if (v === this._distance) return;
+	      this._distance = v;
+	      this.position.setLength(v * _constants.SF);
+	    },
+	    get: function get() {
+	      return this.position.length() / _constants.SF;
+	    }
+	  }, {
+	    key: 'zoom',
+	    set: function set(v) {
+	      if (v === this.camera.zoom) return;
+	      this.camera.zoom = v;
+	      this.camera.updateProjectionMatrix();
+	    },
+	    get: function get() {
+	      return this.camera.zoom;
 	    }
 	  }]);
 
@@ -11360,9 +11401,9 @@
 	      }
 
 	      if (anyInteractionActive) {
-	        this.camera.locked = true;
+	        this.camera.lockedForInteraction = true;
 	      } else {
-	        this.camera.locked = false;
+	        this.camera.lockedForInteraction = false;
 	      }
 	    }
 	  }, {

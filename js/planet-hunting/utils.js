@@ -57,9 +57,8 @@ export function deepExtend() {
   return extend.apply(null, args);
 }
 
-window.ext = extend;
-
 function isPlainObject(obj) {
   return typeof obj === "object";
 }
+
 
