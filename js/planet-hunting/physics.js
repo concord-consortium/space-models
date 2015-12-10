@@ -1,4 +1,4 @@
-import {PLANET_RADIUS, STAR_RADIUS} from './constants.js';
+import {PLANET_RADIUS, STAR_RADIUS, SOLAR_MASS} from './constants.js';
 
 const DEG_2_RAD = Math.PI / 180;
 // The universal gravitational constant in AU, years, and earth-mass units.
@@ -31,11 +31,11 @@ export function updateTelescope(telescope, star, planet, camera, timestep) {
   }
 }
 
-export function makeCircularOrbit(planet) {
+export function makeCircularOrbit(planet, star) {
   let p = planet;
   let a = Math.atan2(p.x, p.y);
   let d = Math.sqrt(p.x * p.x + p.y * p.y);
-  let v = 2 * Math.PI / Math.sqrt(d);
+  let v = 2 * Math.PI / Math.sqrt(d) * Math.sqrt(star.mass / SOLAR_MASS);
   p.vx = v * Math.cos(a);
   p.vy = -v * Math.sin(a);
 }

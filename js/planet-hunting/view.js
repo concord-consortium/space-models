@@ -4,6 +4,7 @@ import Star from './view-models/star.js';
 import Planet from './view-models/planet.js';
 import Grid from './view-models/grid.js';
 import BreadCrumbs from './view-models/bread-crumbs.js';
+import HabitationZone from './view-models/habitation-zone.js';
 import Camera from './view-models/camera.js';
 import InteractionsManager from './interactions-manager.js';
 import {SF} from './constants.js';
@@ -40,6 +41,7 @@ export default class {
 
   setProps(props) {
     this.star.setProps(props.star);
+    this.habitationZone.setProps(props.habitationZone);
     this.planet.setProps(props.planet);
     this.camera.setProps(props.camera);
 
@@ -121,10 +123,12 @@ export default class {
   _initScene() {
     this.grid = new Grid();
     this.star = new Star();
+    this.habitationZone = new HabitationZone();
     this.planet = new Planet();
     this.breadCrumbs = new BreadCrumbs();
     this.scene.add(this.grid.rootObject);
     this.scene.add(this.star.rootObject);
+    this.scene.add(this.habitationZone.rootObject);
     this.scene.add(this.planet.rootObject);
     this.scene.add(this.breadCrumbs.rootObject);
     this.scene.add(new THREE.AmbientLight(0x202020));

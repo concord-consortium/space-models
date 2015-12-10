@@ -102,6 +102,8 @@
 
 	var _presets2 = _interopRequireDefault(_presets);
 
+	var _constants = __webpack_require__(5);
+
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -110,25 +112,29 @@
 
 	var BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
 
-	var EARTH_MASS = 5.97e24; // [ kg ]
-	var SUN_MASS = 1.99e30; // [ kg ]
-
 	var DEF_STATE = {
 	  time: 0, // [ year ]
 	  timestep: 0.01, // [ year ]
 	  star: {
-	    x: 'output', // [ AU ]
+	    x: 'output', // [ AU ]           - depends on planet position
 	    y: 'output', // [ AU ]
-	    vx: 'output', // [ AU / year ]
+	    vx: 'output', // [ AU / year ]    - depends on planet velocity
 	    vy: 'output', // [ AU / year ]
-	    mass: SUN_MASS / EARTH_MASS // [ earth mass ]
+	    mass: _constants.SOLAR_MASS, // [ earth masses ]
+	    scale: 1,
+	    color: 0xFFFF00
+	  },
+	  habitationZone: {
+	    visible: false,
+	    innerRadius: 0.95, // [ AU ]
+	    outerRadius: 1.37 // [ AU ]
 	  },
 	  planet: {
 	    x: 1, // [ AU ]
 	    y: 0, // [ AU ]
-	    vx: 'fakeValue', // [ AU / year ] - velocity will be calculated dynamically later!
-	    vy: 'fakeValue', // [ AU / year ]   See #setCircularVelocity call below.
-	    diameter: 1, // [ earth diameter ]
+	    vx: 'fakeValue', // [ AU / year ]      - velocity will be calculated dynamically later!
+	    vy: 'fakeValue', // [ AU / year ]        See #setCircularVelocity call below.
+	    diameter: 1, // [ earth diameter ] - diameter multiplier, 1 => earth diameter
 	    rocky: true
 	  },
 	  camera: {
@@ -143,7 +149,7 @@
 	  }
 	};
 	// Velocity will be set in such a way so that its orbit is circular.
-	(0, _physics.makeCircularOrbit)(DEF_STATE.planet);
+	(0, _physics.makeCircularOrbit)(DEF_STATE.planet, DEF_STATE.star);
 
 	var _class = (function () {
 	  function _class(parentEl) {
@@ -210,7 +216,7 @@
 	  }, {
 	    key: 'makeCircularOrbit',
 	    value: function makeCircularOrbit() {
-	      (0, _physics.makeCircularOrbit)(this.state.planet);
+	      (0, _physics.makeCircularOrbit)(this.state.planet, this.state.star);
 	      this._emitStateChange();
 	    }
 	  }, {
@@ -967,11 +973,11 @@
 	  }
 	}
 
-	function makeCircularOrbit(planet) {
+	function makeCircularOrbit(planet, star) {
 	  var p = planet;
 	  var a = Math.atan2(p.x, p.y);
 	  var d = Math.sqrt(p.x * p.x + p.y * p.y);
-	  var v = 2 * Math.PI / Math.sqrt(d);
+	  var v = 2 * Math.PI / Math.sqrt(d) * Math.sqrt(star.mass / _constants.SOLAR_MASS);
 	  p.vx = v * Math.cos(a);
 	  p.vy = -v * Math.sin(a);
 	}
@@ -1063,10 +1069,14 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	// Default unit: AU
-	var SF = exports.SF = 1000; // scale factor, conversion between model and view units
-	var STAR_RADIUS = exports.STAR_RADIUS = 0.16;
-	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05;
+	var SF = exports.SF = 1000; // scale factor, conversion between model unit [AU] and view unit
+
+	var STAR_RADIUS = exports.STAR_RADIUS = 0.16; // [ AU ]
+	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05; // [ AU ]
+
+	var SOLAR_MASS_KG = 1.99e30; // [ kg ]
+	var EARTH_MASS_KG = 5.97e24; // [ kg ]
+	var SOLAR_MASS = exports.SOLAR_MASS = SOLAR_MASS_KG / EARTH_MASS_KG; // [ earth masses ]
 
 /***/ },
 /* 6 */
@@ -1139,6 +1149,10 @@
 
 	var _breadCrumbs2 = _interopRequireDefault(_breadCrumbs);
 
+	var _habitationZone = __webpack_require__(25);
+
+	var _habitationZone2 = _interopRequireDefault(_habitationZone);
+
 	var _camera = __webpack_require__(16);
 
 	var _camera2 = _interopRequireDefault(_camera);
@@ -1190,6 +1204,7 @@
 	    key: 'setProps',
 	    value: function setProps(props) {
 	      this.star.setProps(props.star);
+	      this.habitationZone.setProps(props.habitationZone);
 	      this.planet.setProps(props.planet);
 	      this.camera.setProps(props.camera);
 
@@ -1288,10 +1303,12 @@
 	    value: function _initScene() {
 	      this.grid = new _grid2.default();
 	      this.star = new _star2.default();
+	      this.habitationZone = new _habitationZone2.default();
 	      this.planet = new _planet2.default();
 	      this.breadCrumbs = new _breadCrumbs2.default();
 	      this.scene.add(this.grid.rootObject);
 	      this.scene.add(this.star.rootObject);
+	      this.scene.add(this.habitationZone.rootObject);
 	      this.scene.add(this.planet.rootObject);
 	      this.scene.add(this.breadCrumbs.rootObject);
 	      this.scene.add(new THREE.AmbientLight(0x202020));
@@ -10591,16 +10608,13 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DEF_COLOR = 0xFFC107;
-	var DEF_EMISSIVE = 0xFFC107;
-
 	var _class = (function () {
 	  function _class() {
 	    _classCallCheck(this, _class);
 
-	    var geometry = new THREE.SphereGeometry(_constants.STAR_RADIUS * _constants.SF, 64, 64);
-	    this.material = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
-	    this.mesh = new THREE.Mesh(geometry, this.material);
+	    this.geometry = new THREE.SphereGeometry(_constants.STAR_RADIUS * _constants.SF, 64, 64);
+	    this.material = new THREE.MeshPhongMaterial();
+	    this.mesh = new THREE.Mesh(this.geometry, this.material);
 	    this.posObject = new THREE.Object3D();
 	    this.posObject.add(this.mesh);
 
@@ -10613,12 +10627,9 @@
 	    value: function setProps(props) {
 	      this.position.x = props.x * _constants.SF;
 	      this.position.y = props.y * _constants.SF;
-	    }
-	  }, {
-	    key: 'setHighlighted',
-	    value: function setHighlighted(v) {
-	      //this.material.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
-	      //this.material.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
+	      this.material.color.setHex(props.color);
+	      this.material.emissive.setHex(props.color);
+	      this.scale = props.scale;
 	    }
 	  }, {
 	    key: 'rootObject',
@@ -11007,7 +11018,7 @@
 	    var size = 0.03 * _constants.SF;
 	    this.geometry = new THREE.TextGeometry(text, {
 	      size: size,
-	      height: 0.001 * _constants.SF
+	      height: 1e-6 * _constants.SF
 	    });
 	    this.material = new THREE.LineBasicMaterial({ color: 0xffffaa });
 	    this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -11446,7 +11457,12 @@
 
 	var _physics = __webpack_require__(4);
 
-	var presets = {
+	var _utils = __webpack_require__(3);
+
+	var _constants = __webpack_require__(5);
+
+	exports.default = {
+	  // === PLANETS ===
 	  'NoPlanet': {
 	    planet: {
 	      diameter: 0
@@ -11544,14 +11560,80 @@
 	    camera: {
 	      zoom: 2.5
 	    }
+	  },
+	  // === STARS ===
+	  'StarRed': { // M - red (temp 3120 K)
+	    planet: {},
+	    star: {
+	      mass: 0.21 * _constants.SOLAR_MASS,
+	      color: 0xFF0000,
+	      scale: 0.32
+	    },
+	    habitationZone: {
+	      innerRadius: 0.08,
+	      outerRadius: 0.12
+	    },
+	    camera: {
+	      zoom: 1
+	    }
+	  },
+	  'StarOrange': { // K - orange (temp 4640 K)
+	    star: {
+	      mass: 0.69 * _constants.SOLAR_MASS,
+	      color: 0xFFA500,
+	      scale: 0.74
+	    },
+	    habitationZone: {
+	      innerRadius: 0.38,
+	      outerRadius: 0.55
+	    },
+	    camera: {
+	      zoom: 1
+	    }
+	  },
+	  'Sun': { // G - yellow (temp 5920 K) -> our Sun
+	    star: {
+	      mass: _constants.SOLAR_MASS,
+	      color: 0xFFFF00,
+	      scale: 1
+	    },
+	    habitationZone: {
+	      innerRadius: 0.95,
+	      outerRadius: 1.37
+	    },
+	    camera: {
+	      zoom: 1
+	    }
+	  },
+	  'StarWhite': { // F - white (temp 7240 K)
+	    star: {
+	      mass: 1.29 * _constants.SOLAR_MASS,
+	      color: 0xFFFFFF,
+	      scale: 1.2
+	    },
+	    habitationZone: {
+	      innerRadius: 1.5,
+	      outerRadius: 2.17
+	    },
+	    camera: {
+	      zoom: 0.48
+	    }
+	  },
+	  'StarBlue': { // A - blue (temp 8620 K)
+	    star: {
+	      mass: 2.1 * _constants.SOLAR_MASS,
+	      color: 0x00FFFF,
+	      scale: 1.7
+	    },
+	    habitationZone: {
+	      innerRadius: 4.26,
+	      outerRadius: 6.14
+	    },
+	    camera: {
+	      zoom: 0.25
+	    }
 	  }
 	};
-
-	Object.keys(presets).forEach(function (name) {
-	  (0, _physics.makeCircularOrbit)(presets[name].planet);
-	});
-
-	exports.default = presets;
 
 /***/ },
 /* 19 */
@@ -11677,7 +11759,7 @@
 	  var prefix = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
 	  var result = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
-	  if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object' || Array.isArray(value)) {
+	  if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object' || Array.isArray(value) || value === null) {
 	    // Simple value like number, string or array.
 	    result[prefix] = value;
 	    return;
@@ -12177,6 +12259,73 @@
 	    this.disconnect = disconnect.bind(this);
 	};
 
+
+/***/ },
+/* 25 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _constants = __webpack_require__(5);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var _class = (function () {
+	  function _class() {
+	    _classCallCheck(this, _class);
+
+	    this.outerGeometry = new THREE.RingGeometry(0, 1, 64);
+	    this.outerMaterial = new THREE.MeshBasicMaterial({ color: 0x3DB5FF, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
+	    this.outerMesh = new THREE.Mesh(this.outerGeometry, this.outerMaterial);
+	    // Set ring a bit above 0 (=> above grid and axis).
+	    this.outerMesh.position.z = 0.004 * _constants.SF;
+
+	    this.innerGeometry = new THREE.RingGeometry(0, 1, 64);
+	    this.innerMaterial = new THREE.MeshBasicMaterial({ color: 0x00000, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+	    this.innerMesh = new THREE.Mesh(this.innerGeometry, this.innerMaterial);
+	    this.innerMesh.position.z = 0.005 * _constants.SF;
+
+	    this.posObject = new THREE.Object3D();
+	    this.posObject.add(this.outerMesh);
+	    this.posObject.add(this.innerMesh);
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setProps',
+	    value: function setProps(props) {
+	      this.rootObject.visible = props.visible;
+	      this.innerRadius = props.innerRadius;
+	      this.outerRadius = props.outerRadius;
+	    }
+	  }, {
+	    key: 'rootObject',
+	    get: function get() {
+	      return this.posObject;
+	    }
+	  }, {
+	    key: 'innerRadius',
+	    set: function set(v) {
+	      v = v * _constants.SF;
+	      this.innerMesh.scale.set(v, v, v);
+	    }
+	  }, {
+	    key: 'outerRadius',
+	    set: function set(v) {
+	      v = v * _constants.SF;
+	      this.outerMesh.scale.set(v, v, v);
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
 
 /***/ }
 /******/ ]);

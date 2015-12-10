@@ -4,28 +4,33 @@ import {makeCircularOrbit} from './physics.js';
 import * as engine from './engine.js';
 import View from './view.js';
 import presets from './presets.js';
+import {SOLAR_MASS} from './constants.js';
 
 const BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
 
-const EARTH_MASS = 5.97e24; // [ kg ]
-const SUN_MASS = 1.99e30;   // [ kg ]
-
 const DEF_STATE = {
-  time: 0,                      // [ year ]
-  timestep: 0.01,              // [ year ]
+  time: 0,             // [ year ]
+  timestep: 0.01,      // [ year ]
   star: {
-    x: 'output',                // [ AU ]
-    y: 'output',                // [ AU ]
-    vx: 'output',               // [ AU / year ]
-    vy: 'output',               // [ AU / year ]
-    mass: SUN_MASS / EARTH_MASS // [ earth mass ]
+    x: 'output',       // [ AU ]           - depends on planet position
+    y: 'output',       // [ AU ]
+    vx: 'output',      // [ AU / year ]    - depends on planet velocity
+    vy: 'output',      // [ AU / year ]
+    mass: SOLAR_MASS,  // [ earth masses ]
+    scale: 1,
+    color: 0xFFFF00
+  },
+  habitationZone: {
+    visible: false,
+    innerRadius: 0.95, // [ AU ]
+    outerRadius: 1.37  // [ AU ]
   },
   planet: {
     x: 1,            // [ AU ]
     y: 0,            // [ AU ]
-    vx: 'fakeValue', // [ AU / year ] - velocity will be calculated dynamically later!
-    vy: 'fakeValue', // [ AU / year ]   See #setCircularVelocity call below.
-    diameter: 1,     // [ earth diameter ]
+    vx: 'fakeValue', // [ AU / year ]      - velocity will be calculated dynamically later!
+    vy: 'fakeValue', // [ AU / year ]        See #setCircularVelocity call below.
+    diameter: 1,     // [ earth diameter ] - diameter multiplier, 1 => earth diameter
     rocky:    true
   },
   camera: {
@@ -40,7 +45,7 @@ const DEF_STATE = {
   }
 };
 // Velocity will be set in such a way so that its orbit is circular.
-makeCircularOrbit(DEF_STATE.planet);
+makeCircularOrbit(DEF_STATE.planet, DEF_STATE.star);
 
 export default class {
   constructor(parentEl) {
@@ -95,7 +100,7 @@ export default class {
   }
 
   makeCircularOrbit() {
-    makeCircularOrbit(this.state.planet);
+    makeCircularOrbit(this.state.planet, this.state.star);
     this._emitStateChange();
   }
 

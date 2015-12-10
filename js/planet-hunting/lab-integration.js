@@ -79,7 +79,7 @@ function getLabOutputs(state) {
 // Flattens state, as Lab doesn't support nested properties.
 // E.g. {timestep: 1, planet: {x: 1, y: 2}} => {'timestep': 1, 'planet.x': 1, 'planet.y': 2}
 function flattenObject(value, prefix = null, result = {}) {
-  if (typeof value !== 'object' || Array.isArray(value)) {
+  if (typeof value !== 'object' || Array.isArray(value) || value === null) {
     // Simple value like number, string or array.
     result[prefix] = value;
     return;

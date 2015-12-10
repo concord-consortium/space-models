@@ -1,6 +1,9 @@
 import {makeCircularOrbit} from './physics.js';
+import {deepExtend} from './utils.js';
+import {SOLAR_MASS} from './constants.js';
 
-let presets = {
+export default {
+  // === PLANETS ===
   'NoPlanet': {
     planet: {
       diameter: 0
@@ -98,11 +101,77 @@ let presets = {
     camera: {
       zoom: 2.5
     }
+  },
+  // === STARS ===
+  'StarRed': { // M - red (temp 3120 K)
+    planet: {},
+    star: {
+      mass: 0.21 * SOLAR_MASS,
+      color: 0xFF0000,
+      scale: 0.32
+    },
+    habitationZone: {
+      innerRadius: 0.08,
+      outerRadius: 0.12
+    },
+    camera: {
+      zoom: 1
+    }
+  },
+  'StarOrange': { // K - orange (temp 4640 K)
+    star: {
+      mass: 0.69 * SOLAR_MASS,
+      color: 0xFFA500,
+      scale: 0.74
+    },
+    habitationZone: {
+      innerRadius: 0.38,
+      outerRadius: 0.55
+    },
+    camera: {
+      zoom: 1
+    }
+  },
+  'Sun': { // G - yellow (temp 5920 K) -> our Sun
+    star: {
+      mass: SOLAR_MASS,
+      color: 0xFFFF00,
+      scale: 1
+    },
+    habitationZone: {
+      innerRadius: 0.95,
+      outerRadius: 1.37
+    },
+    camera: {
+      zoom: 1
+    }
+  },
+  'StarWhite': { // F - white (temp 7240 K)
+    star: {
+      mass: 1.29 * SOLAR_MASS,
+      color: 0xFFFFFF,
+      scale: 1.2
+    },
+    habitationZone: {
+      innerRadius: 1.5,
+      outerRadius: 2.17
+    },
+    camera: {
+      zoom: 0.48
+    }
+  },
+  'StarBlue': { // A - blue (temp 8620 K)
+    star: {
+      mass: 2.1 * SOLAR_MASS,
+      color: 0x00FFFF,
+      scale: 1.7
+    },
+    habitationZone: {
+      innerRadius: 4.26,
+      outerRadius: 6.14
+    },
+    camera: {
+      zoom: 0.25
+    }
   }
 };
-
-Object.keys(presets).forEach(function (name) {
-  makeCircularOrbit(presets[name].planet);
-});
-
-export default presets;
