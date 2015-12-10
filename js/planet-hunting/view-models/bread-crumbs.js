@@ -60,4 +60,17 @@ export default class {
     this.count = Math.min(COUNT, this.count + 1);
     this.idx = (this.idx + 1) % COUNT;
   }
+
+  clear() {
+    if (this.count === 0) return;
+    // Set all alphas to 0.
+    let alphas = this.points.geometry.attributes.alpha;
+    for (let i = 0; i < this.count; i++) {
+      let idx = this.idx - i >= 0 ? this.idx - i : this.idx - i + COUNT;
+      alphas.array[idx] = 0;
+    }
+    alphas.needsUpdate = true;
+    this.count = 0;
+    this.idx = 0;
+  }
 }

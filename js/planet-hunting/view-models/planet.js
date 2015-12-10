@@ -42,6 +42,7 @@ export default class {
   }
 
   setProps(props) {
+    this.rootObject.visible = props.diameter > 0;
     this.position.x = props.x * SF;
     this.position.y = props.y * SF;
     this.scale = 1 + props.diameter / 50;

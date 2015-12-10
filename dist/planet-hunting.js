@@ -167,6 +167,8 @@
 
 	    this.dispatch = new _eventemitter2.default();
 
+	    this._setupBreadCrumbs();
+
 	    this._rafCallback = this._rafCallback.bind(this);
 	    this._rafCallback();
 	  }
@@ -216,9 +218,6 @@
 	    value: function _rafCallback() {
 	      if (this.isPlaying) {
 	        engine.tick(this.state);
-	        if (this.tick % BREAD_CRUMBS_INTERVAL === 0) {
-	          this.view.addBreadCrumb(this.state.planet.x, this.state.planet.y);
-	        }
 	        this.tick += 1;
 	        this.dispatch.emit('tick', this.state);
 	      }
@@ -227,6 +226,21 @@
 	      this.view.setProps(this.state);
 	      this.view.render();
 	      this._rafID = requestAnimationFrame(this._rafCallback);
+	    }
+	  }, {
+	    key: '_setupBreadCrumbs',
+	    value: function _setupBreadCrumbs() {
+	      var _this2 = this;
+
+	      this.on('state.change', function (newState) {
+	        if (newState.planet.diameter === 0) _this2.view.clearBreadCrumbs();
+	      });
+	      this.on('tick', function (newState) {
+	        if (_this2.tick % BREAD_CRUMBS_INTERVAL === 0 && newState.planet.diameter > 0) {
+	          // Don't add bread crumbs when diameter === 0 what means that there is no planet.
+	          _this2.view.addBreadCrumb(newState.planet.x, newState.planet.y);
+	        }
+	      });
 	    }
 	  }, {
 	    key: '_emitStateChange',
@@ -1192,6 +1206,11 @@
 	    key: 'addBreadCrumb',
 	    value: function addBreadCrumb(x, y) {
 	      this.breadCrumbs.addBreadCrumb(x, y);
+	    }
+	  }, {
+	    key: 'clearBreadCrumbs',
+	    value: function clearBreadCrumbs() {
+	      this.breadCrumbs.clear();
 	    }
 
 	    // Delegate #on to EventEmitter object.
@@ -10678,6 +10697,7 @@
 	  }, {
 	    key: 'setProps',
 	    value: function setProps(props) {
+	      this.rootObject.visible = props.diameter > 0;
 	      this.position.x = props.x * _constants.SF;
 	      this.position.y = props.y * _constants.SF;
 	      this.scale = 1 + props.diameter / 50;
@@ -11081,6 +11101,20 @@
 	      this.idx = (this.idx + 1) % COUNT;
 	    }
 	  }, {
+	    key: 'clear',
+	    value: function clear() {
+	      if (this.count === 0) return;
+	      // Set all alphas to 0.
+	      var alphas = this.points.geometry.attributes.alpha;
+	      for (var i = 0; i < this.count; i++) {
+	        var idx = this.idx - i >= 0 ? this.idx - i : this.idx - i + COUNT;
+	        alphas.array[idx] = 0;
+	      }
+	      alphas.needsUpdate = true;
+	      this.count = 0;
+	      this.idx = 0;
+	    }
+	  }, {
 	    key: 'rootObject',
 	    get: function get() {
 	      return this.points;
@@ -11413,6 +11447,11 @@
 	var _physics = __webpack_require__(4);
 
 	var presets = {
+	  'NoPlanet': {
+	    planet: {
+	      diameter: 0
+	    }
+	  },
 	  'Earth': {
 	    planet: {
 	      x: 1 / Math.sqrt(2),
@@ -11458,7 +11497,7 @@
 	      rocky: true
 	    },
 	    camera: {
-	      zoom: 2
+	      zoom: 1.5
 	    }
 	  },
 	  'MercuryDiameter10x': { // Like Mercury but 10x larger diameter

@@ -1,6 +1,11 @@
 import {makeCircularOrbit} from './physics.js';
 
 let presets = {
+  'NoPlanet': {
+    planet: {
+      diameter: 0
+    }
+  },
   'Earth': {
     planet: {
       x: 1 / Math.sqrt(2),
@@ -46,7 +51,7 @@ let presets = {
       rocky: true
     },
     camera: {
-      zoom: 2
+      zoom: 1.5
     }
   },
   'MercuryDiameter10x': { // Like Mercury but 10x larger diameter

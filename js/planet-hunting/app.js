@@ -60,6 +60,8 @@ export default class {
 
     this.dispatch = new EventEmitter();
 
+    this._setupBreadCrumbs();
+
     this._rafCallback = this._rafCallback.bind(this);
     this._rafCallback();
   }
@@ -100,9 +102,6 @@ export default class {
   _rafCallback() {
     if (this.isPlaying) {
       engine.tick(this.state);
-      if (this.tick % BREAD_CRUMBS_INTERVAL === 0) {
-        this.view.addBreadCrumb(this.state.planet.x, this.state.planet.y);
-      }
       this.tick += 1;
       this.dispatch.emit('tick', this.state);
     }
@@ -111,6 +110,18 @@ export default class {
     this.view.setProps(this.state);
     this.view.render();
     this._rafID = requestAnimationFrame(this._rafCallback);
+  }
+
+  _setupBreadCrumbs() {
+    this.on('state.change', (newState) => {
+      if (newState.planet.diameter === 0) this.view.clearBreadCrumbs();
+    });
+    this.on('tick', (newState) => {
+      if (this.tick % BREAD_CRUMBS_INTERVAL === 0 && newState.planet.diameter > 0) {
+        // Don't add bread crumbs when diameter === 0 what means that there is no planet.
+        this.view.addBreadCrumb(newState.planet.x, newState.planet.y);
+      }
+    });
   }
 
   _emitStateChange() {

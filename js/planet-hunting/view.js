@@ -56,6 +56,10 @@ export default class {
     this.breadCrumbs.addBreadCrumb(x, y);
   }
 
+  clearBreadCrumbs() {
+    this.breadCrumbs.clear();
+  }
+
   // Delegate #on to EventEmitter object.
   on() {
     this.dispatch.on.apply(this.dispatch, arguments);
