@@ -108,7 +108,8 @@ export default {
     star: {
       mass: 0.21 * SOLAR_MASS,
       color: 0xFF0000,
-      scale: 0.32
+      scale: 0.32,
+      type: 'M'
     },
     habitationZone: {
       innerRadius: 0.08,
@@ -122,7 +123,8 @@ export default {
     star: {
       mass: 0.69 * SOLAR_MASS,
       color: 0xFFA500,
-      scale: 0.74
+      scale: 0.74,
+      type: 'K'
     },
     habitationZone: {
       innerRadius: 0.38,
@@ -136,7 +138,8 @@ export default {
     star: {
       mass: SOLAR_MASS,
       color: 0xFFFF00,
-      scale: 1
+      scale: 1,
+      type: 'G'
     },
     habitationZone: {
       innerRadius: 0.95,
@@ -150,7 +153,8 @@ export default {
     star: {
       mass: 1.29 * SOLAR_MASS,
       color: 0xFFFFFF,
-      scale: 1.2
+      scale: 1.2,
+      type: 'F'
     },
     habitationZone: {
       innerRadius: 1.5,
@@ -164,7 +168,8 @@ export default {
     star: {
       mass: 2.1 * SOLAR_MASS,
       color: 0x00FFFF,
-      scale: 1.7
+      scale: 1.7,
+      type: 'A'
     },
     habitationZone: {
       innerRadius: 4.26,

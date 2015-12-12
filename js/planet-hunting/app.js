@@ -5,12 +5,13 @@ import * as engine from './engine.js';
 import View from './view.js';
 import presets from './presets.js';
 import {SOLAR_MASS} from './constants.js';
+import HabitabilityAnalyzer from './habitability-analyzer.js';
 
 const BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
 
 const DEF_STATE = {
   time: 0,             // [ year ]
-  timestep: 0.01,      // [ year ]
+  timestep: 0.001,      // [ year ]
   star: {
     x: 'output',       // [ AU ]           - depends on planet position
     y: 'output',       // [ AU ]
@@ -18,7 +19,8 @@ const DEF_STATE = {
     vy: 'output',      // [ AU / year ]
     mass: SOLAR_MASS,  // [ earth masses ]
     scale: 1,
-    color: 0xFFFF00
+    color: 0xFFFF00,
+    type: 'G'
   },
   habitationZone: {
     visible: false,
@@ -89,6 +91,23 @@ export default class {
 
   loadPreset(name) {
     this.setState(presets[name]);
+  }
+
+  analyzeHabitability() {
+    let analyzer = new HabitabilityAnalyzer(this.state.star, this.state.planet, this.state.habitationZone);
+    let dispatch = this.dispatch;
+    let tickCallback = function (newState) {
+      analyzer.addPlanetPos(newState.planet.x, newState.planet.y);
+      if (analyzer.orbitCheckDone) {
+        dispatch.off('tick', tickCallback);
+        alert(JSON.stringify(analyzer.output, 2));
+      }
+    };
+    dispatch.on('tick', tickCallback);
+
+    if (!this.isPlaying) {
+      this.play();
+    }
   }
 
   resize() {

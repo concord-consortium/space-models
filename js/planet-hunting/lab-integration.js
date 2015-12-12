@@ -50,6 +50,9 @@ export default function(app) {
   phone.addListener('loadPreset', function (name) {
     app.loadPreset(name);
   });
+  phone.addListener('analyzeHabitability', function (name) {
+    app.analyzeHabitability(name);
+  });
 
   phone.initialize();
 

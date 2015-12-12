@@ -104,6 +104,10 @@
 
 	var _constants = __webpack_require__(5);
 
+	var _habitabilityAnalyzer = __webpack_require__(26);
+
+	var _habitabilityAnalyzer2 = _interopRequireDefault(_habitabilityAnalyzer);
+
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -114,7 +118,7 @@
 
 	var DEF_STATE = {
 	  time: 0, // [ year ]
-	  timestep: 0.01, // [ year ]
+	  timestep: 0.001, // [ year ]
 	  star: {
 	    x: 'output', // [ AU ]           - depends on planet position
 	    y: 'output', // [ AU ]
@@ -122,7 +126,8 @@
 	    vy: 'output', // [ AU / year ]
 	    mass: _constants.SOLAR_MASS, // [ earth masses ]
 	    scale: 1,
-	    color: 0xFFFF00
+	    color: 0xFFFF00,
+	    type: 'G'
 	  },
 	  habitationZone: {
 	    visible: false,
@@ -202,6 +207,24 @@
 	    key: 'loadPreset',
 	    value: function loadPreset(name) {
 	      this.setState(_presets2.default[name]);
+	    }
+	  }, {
+	    key: 'analyzeHabitability',
+	    value: function analyzeHabitability() {
+	      var analyzer = new _habitabilityAnalyzer2.default(this.state.star, this.state.planet, this.state.habitationZone);
+	      var dispatch = this.dispatch;
+	      var tickCallback = function tickCallback(newState) {
+	        analyzer.addPlanetPos(newState.planet.x, newState.planet.y);
+	        if (analyzer.orbitCheckDone) {
+	          dispatch.off('tick', tickCallback);
+	          alert(JSON.stringify(analyzer.output, 2));
+	        }
+	      };
+	      dispatch.on('tick', tickCallback);
+
+	      if (!this.isPlaying) {
+	        this.play();
+	      }
 	    }
 	  }, {
 	    key: 'resize',
@@ -11608,7 +11631,8 @@
 	    star: {
 	      mass: 0.21 * _constants.SOLAR_MASS,
 	      color: 0xFF0000,
-	      scale: 0.32
+	      scale: 0.32,
+	      type: 'M'
 	    },
 	    habitationZone: {
 	      innerRadius: 0.08,
@@ -11622,7 +11646,8 @@
 	    star: {
 	      mass: 0.69 * _constants.SOLAR_MASS,
 	      color: 0xFFA500,
-	      scale: 0.74
+	      scale: 0.74,
+	      type: 'K'
 	    },
 	    habitationZone: {
 	      innerRadius: 0.38,
@@ -11636,7 +11661,8 @@
 	    star: {
 	      mass: _constants.SOLAR_MASS,
 	      color: 0xFFFF00,
-	      scale: 1
+	      scale: 1,
+	      type: 'G'
 	    },
 	    habitationZone: {
 	      innerRadius: 0.95,
@@ -11650,7 +11676,8 @@
 	    star: {
 	      mass: 1.29 * _constants.SOLAR_MASS,
 	      color: 0xFFFFFF,
-	      scale: 1.2
+	      scale: 1.2,
+	      type: 'F'
 	    },
 	    habitationZone: {
 	      innerRadius: 1.5,
@@ -11664,7 +11691,8 @@
 	    star: {
 	      mass: 2.1 * _constants.SOLAR_MASS,
 	      color: 0x00FFFF,
-	      scale: 1.7
+	      scale: 1.7,
+	      type: 'A'
 	    },
 	    habitationZone: {
 	      innerRadius: 4.26,
@@ -11731,6 +11759,9 @@
 	  });
 	  phone.addListener('loadPreset', function (name) {
 	    app.loadPreset(name);
+	  });
+	  phone.addListener('analyzeHabitability', function (name) {
+	    app.analyzeHabitability(name);
 	  });
 
 	  phone.initialize();
@@ -12367,6 +12398,90 @@
 	})();
 
 	exports.default = _class;
+
+/***/ },
+/* 26 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var MARS_MASS = 0.107; // of Earth mass
+	var MIN_DIFF = 1e-6;
+
+	var _class = (function () {
+	  function _class(star, planet, habitationZone) {
+	    _classCallCheck(this, _class);
+
+	    this.star = star;
+	    this.planet = planet;
+	    this.habitationZone = habitationZone;
+
+	    this.orbitCheckDone = false;
+
+	    this.orbitMaxDist = -Infinity;
+	    this.orbitMinDist = Infinity;
+	    this.prevDist = null;
+	    this.trends = [];
+	  }
+
+	  _createClass(_class, [{
+	    key: 'addPlanetPos',
+	    value: function addPlanetPos(x, y) {
+	      var dist = distance(x, y);
+	      this.orbitMaxDist = Math.max(dist, this.orbitMaxDist);
+	      this.orbitMinDist = Math.min(dist, this.orbitMinDist);
+
+	      if (this.prevDist !== null) {
+	        if (dist > this.prevDist && this.trends[0] !== '+') {
+	          this.trends.unshift('+');
+	        } else if (dist < this.prevDist && this.trends[0] !== '-') {
+	          this.trends.unshift('-');
+	        }
+
+	        // Possible cases: ['+', '-', '+'] or ['-', '+', '-']
+	        // When we have observed three different trends (planet moving towards or away from star),
+	        // it means that the planed have done the full orbit around the star.
+	        if (this.trends.length >= 3) {
+	          this.orbitCheckDone = true;
+	        }
+	      }
+
+	      this.prevDist = dist;
+	    }
+	  }, {
+	    key: 'output',
+	    get: function get() {
+	      if (!this.orbitCheckDone) return null;
+	      var star = this.star;
+	      var planet = this.planet;
+	      var hz = this.habitationZone;
+	      var orbitMaxDist = this.orbitMaxDist;
+	      var orbitMinDist = this.orbitMinDist;
+	      return {
+	        starType: star.type !== 'A' && star.type !== 'M',
+	        planetType: planet.rocky,
+	        planetSize: planet.diameter > Math.pow(4 * MARS_MASS, 0.3333),
+	        orbitalDistance: orbitMinDist > hz.innerRadius && orbitMaxDist < hz.outerRadius
+	      };
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+	function distance(x, y) {
+	  return Math.sqrt(x * x + y * y);
+	}
 
 /***/ }
 /******/ ]);
