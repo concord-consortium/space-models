@@ -42,8 +42,8 @@ export function makeCircularOrbit(planet, star) {
   let a = Math.atan2(p.x, p.y);
   let d = Math.sqrt(p.x * p.x + p.y * p.y);
   let v = 2 * Math.PI / Math.sqrt(d) * Math.sqrt(star.mass / SOLAR_MASS);
-  p.vx = v * Math.cos(a);
-  p.vy = -v * Math.sin(a);
+  p.vx = -v * Math.cos(a);
+  p.vy = v * Math.sin(a);
 }
 
 export function starCamVelocity(star, camera, timestep) {
