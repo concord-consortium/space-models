@@ -15,13 +15,15 @@ export default function(app) {
     phone.post('stop.iframe-model');
   });
   app.on('tick', function (newState) {
-    phone.post('tick', {outputs: getLabOutputs(newState)});
+    phone.post('tick', {outputs: getLabStdOutputs(newState)});
   });
   app.on('state.change', function (newState) {
     if (!propertiesUpdateComingFromLab) {
       phone.post('properties', getLabProperties(newState));
     }
-    phone.post('outputs', getLabOutputs(newState));
+    phone.post('outputs', getLabStdOutputs(newState));
+    // Reset habitability output too, it may require a new analysis.
+    phone.post('outputs', getHabitabilityOutputs(null));
   });
 
   phone.addListener('play', function () {
@@ -50,13 +52,13 @@ export default function(app) {
   phone.addListener('loadPreset', function (name) {
     app.loadPreset(name);
   });
-  phone.addListener('analyzeHabitability', function (name) {
-    app.analyzeHabitability(name);
+  phone.addListener('analyzeHabitability', function () {
+    phone.post('outputs', getHabitabilityOutputs(app.analyzeHabitability()));
   });
 
   phone.initialize();
 
-  phone.post('outputs', getLabOutputs(app.state));
+  phone.post('outputs', getLabStdOutputs(app.state));
 }
 
 // Note that planet hunting keeps both outputs and state variables together.
@@ -69,7 +71,7 @@ function getLabProperties(state) {
   return props;
 }
 
-function getLabOutputs(state) {
+function getLabStdOutputs(state) {
   let outputs = {};
   outputs['time'] = state.time;
   outputs['planet.mass'] = planetMass(state.planet);
@@ -77,6 +79,15 @@ function getLabOutputs(state) {
   outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
   outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
   return outputs;
+}
+
+function getHabitabilityOutputs(results) {
+  return {
+    'habitability.starType': results ? results.starType : null,
+    'habitability.planetType': results ? results.planetType : null,
+    'habitability.planetSize': results ? results.planetSize : null,
+    'habitability.orbitalDistance': results ? results.orbitalDistance : null
+  };
 }
 
 // Flattens state, as Lab doesn't support nested properties.

@@ -8,8 +8,14 @@ const ROCKY_PLANET_DENSITY = 1;
 // The relative density of Jupiter compared to Earth.
 const GAS_PLANET_DENSITY = 1 / 4.13;
 
+const ERR_MSG = 'The model has diverged. Decrease timestep or velocity of the planet.';
+
 export function updatePlanet(star, planet, timestep) {
   leapFrog(star, planet, timestep);
+  if (isNaN(planet.x + planet.y + planet.vx + planet.vy)) {
+    alert(ERR_MSG);
+    throw new Error(ERR_MSG);
+  }
 }
 
 export function updateStar(star, planet) {

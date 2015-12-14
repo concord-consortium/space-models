@@ -104,9 +104,9 @@
 
 	var _constants = __webpack_require__(5);
 
-	var _habitabilityAnalyzer = __webpack_require__(26);
+	var _analyzeHabitability2 = __webpack_require__(27);
 
-	var _habitabilityAnalyzer2 = _interopRequireDefault(_habitabilityAnalyzer);
+	var _analyzeHabitability3 = _interopRequireDefault(_analyzeHabitability2);
 
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -211,20 +211,7 @@
 	  }, {
 	    key: 'analyzeHabitability',
 	    value: function analyzeHabitability() {
-	      var analyzer = new _habitabilityAnalyzer2.default(this.state.star, this.state.planet, this.state.habitationZone);
-	      var dispatch = this.dispatch;
-	      var tickCallback = function tickCallback(newState) {
-	        analyzer.addPlanetPos(newState.planet.x, newState.planet.y);
-	        if (analyzer.orbitCheckDone) {
-	          dispatch.off('tick', tickCallback);
-	          alert(JSON.stringify(analyzer.output, 2));
-	        }
-	      };
-	      dispatch.on('tick', tickCallback);
-
-	      if (!this.isPlaying) {
-	        this.play();
-	      }
+	      return (0, _analyzeHabitability3.default)(this.state.star, this.state.planet, this.state.habitationZone);
 	    }
 	  }, {
 	    key: 'resize',
@@ -972,8 +959,14 @@
 	// The relative density of Jupiter compared to Earth.
 	var GAS_PLANET_DENSITY = 1 / 4.13;
 
+	var ERR_MSG = 'The model has diverged. Decrease timestep or velocity of the planet.';
+
 	function updatePlanet(star, planet, timestep) {
 	  leapFrog(star, planet, timestep);
+	  if (isNaN(planet.x + planet.y + planet.vx + planet.vy)) {
+	    alert(ERR_MSG);
+	    throw new Error(ERR_MSG);
+	  }
 	}
 
 	function updateStar(star, planet) {
@@ -11725,13 +11718,15 @@
 	    phone.post('stop.iframe-model');
 	  });
 	  app.on('tick', function (newState) {
-	    phone.post('tick', { outputs: getLabOutputs(newState) });
+	    phone.post('tick', { outputs: getLabStdOutputs(newState) });
 	  });
 	  app.on('state.change', function (newState) {
 	    if (!propertiesUpdateComingFromLab) {
 	      phone.post('properties', getLabProperties(newState));
 	    }
-	    phone.post('outputs', getLabOutputs(newState));
+	    phone.post('outputs', getLabStdOutputs(newState));
+	    // Reset habitability output too, it may require a new analysis.
+	    phone.post('outputs', getHabitabilityOutputs(null));
 	  });
 
 	  phone.addListener('play', function () {
@@ -11760,13 +11755,13 @@
 	  phone.addListener('loadPreset', function (name) {
 	    app.loadPreset(name);
 	  });
-	  phone.addListener('analyzeHabitability', function (name) {
-	    app.analyzeHabitability(name);
+	  phone.addListener('analyzeHabitability', function () {
+	    phone.post('outputs', getHabitabilityOutputs(app.analyzeHabitability()));
 	  });
 
 	  phone.initialize();
 
-	  phone.post('outputs', getLabOutputs(app.state));
+	  phone.post('outputs', getLabStdOutputs(app.state));
 	};
 
 	var _utils = __webpack_require__(3);
@@ -11815,7 +11810,7 @@
 	  return props;
 	}
 
-	function getLabOutputs(state) {
+	function getLabStdOutputs(state) {
 	  var outputs = {};
 	  outputs['time'] = state.time;
 	  outputs['planet.mass'] = (0, _physics.planetMass)(state.planet);
@@ -11823,6 +11818,15 @@
 	  outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
 	  outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
 	  return outputs;
+	}
+
+	function getHabitabilityOutputs(results) {
+	  return {
+	    'habitability.starType': results ? results.starType : null,
+	    'habitability.planetType': results ? results.planetType : null,
+	    'habitability.planetSize': results ? results.planetSize : null,
+	    'habitability.orbitalDistance': results ? results.orbitalDistance : null
+	  };
 	}
 
 	// Flattens state, as Lab doesn't support nested properties.
@@ -12400,84 +12404,76 @@
 	exports.default = _class;
 
 /***/ },
-/* 26 */
-/***/ function(module, exports) {
+/* 26 */,
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.default = analyzeHabitability;
 
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	var _utils = __webpack_require__(3);
+
+	var _physics = __webpack_require__(4);
 
 	var MARS_MASS = 0.107; // of Earth mass
-	var MIN_DIFF = 1e-6;
+	var ANALYZE_TIMESTEP = 0.001;
+	var MAX_STEPS = 10000000;
 
-	var _class = (function () {
-	  function _class(star, planet, habitationZone) {
-	    _classCallCheck(this, _class);
+	function analyzeHabitability(star, planet, habitationZone) {
+	  var orbit = calcOrbit(star, planet, habitationZone.innerRadius, habitationZone.outerRadius);
+	  return {
+	    starType: star.type !== 'A' && star.type !== 'M',
+	    planetType: planet.rocky,
+	    planetSize: planet.diameter > Math.pow(4 * MARS_MASS, 0.3333),
+	    orbitalDistance: orbit.minDist > habitationZone.innerRadius && orbit.maxDist < habitationZone.outerRadius
+	  };
+	}
 
-	    this.star = star;
-	    this.planet = planet;
-	    this.habitationZone = habitationZone;
+	function calcOrbit(star, planet, allowedMin, allowedMax) {
+	  // Copy star, so we don't modify the provided object!
+	  planet = (0, _utils.deepExtend)({}, planet);
+	  var orbitReady = false;
+	  var prevDist = null;
+	  var trends = [];
+	  var orbit = {
+	    maxDist: -Infinity,
+	    minDist: Infinity
+	  };
+	  var step = 0;
 
-	    this.orbitCheckDone = false;
+	  while (!orbitReady && step < MAX_STEPS) {
+	    var dist = distance(planet.x, planet.y);
+	    orbit.maxDist = Math.max(dist, orbit.maxDist);
+	    orbit.minDist = Math.min(dist, orbit.minDist);
 
-	    this.orbitMaxDist = -Infinity;
-	    this.orbitMinDist = Infinity;
-	    this.prevDist = null;
-	    this.trends = [];
+	    if (prevDist !== null) {
+	      if (dist > prevDist && trends[0] !== '+') {
+	        trends.unshift('+');
+	      } else if (dist < prevDist && trends[0] !== '-') {
+	        trends.unshift('-');
+	      }
+	      // Possible cases: ['+', '-', '+'] or ['-', '+', '-']
+	      // When we have observed three different trends (planet moving towards or away from star),
+	      // it means that the planed have done the full orbit around the star.
+	      if (trends.length >= 3) {
+	        orbitReady = true;
+	      }
+	      // Don't continue calculation if orbit doesn't fit into the allowed range.
+	      if (orbit.maxDist > allowedMax || orbit.minDist < allowedMin) {
+	        orbitReady = true;
+	      }
+	    }
+	    prevDist = dist;
+	    step += 1;
+	    (0, _physics.updatePlanet)(star, planet, ANALYZE_TIMESTEP);
 	  }
 
-	  _createClass(_class, [{
-	    key: 'addPlanetPos',
-	    value: function addPlanetPos(x, y) {
-	      var dist = distance(x, y);
-	      this.orbitMaxDist = Math.max(dist, this.orbitMaxDist);
-	      this.orbitMinDist = Math.min(dist, this.orbitMinDist);
-
-	      if (this.prevDist !== null) {
-	        if (dist > this.prevDist && this.trends[0] !== '+') {
-	          this.trends.unshift('+');
-	        } else if (dist < this.prevDist && this.trends[0] !== '-') {
-	          this.trends.unshift('-');
-	        }
-
-	        // Possible cases: ['+', '-', '+'] or ['-', '+', '-']
-	        // When we have observed three different trends (planet moving towards or away from star),
-	        // it means that the planed have done the full orbit around the star.
-	        if (this.trends.length >= 3) {
-	          this.orbitCheckDone = true;
-	        }
-	      }
-
-	      this.prevDist = dist;
-	    }
-	  }, {
-	    key: 'output',
-	    get: function get() {
-	      if (!this.orbitCheckDone) return null;
-	      var star = this.star;
-	      var planet = this.planet;
-	      var hz = this.habitationZone;
-	      var orbitMaxDist = this.orbitMaxDist;
-	      var orbitMinDist = this.orbitMinDist;
-	      return {
-	        starType: star.type !== 'A' && star.type !== 'M',
-	        planetType: planet.rocky,
-	        planetSize: planet.diameter > Math.pow(4 * MARS_MASS, 0.3333),
-	        orbitalDistance: orbitMinDist > hz.innerRadius && orbitMaxDist < hz.outerRadius
-	      };
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
+	  return orbit;
+	}
 
 	function distance(x, y) {
 	  return Math.sqrt(x * x + y * y);
