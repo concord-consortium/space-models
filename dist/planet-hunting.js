@@ -46,11 +46,11 @@
 
 	'use strict';
 
-	var _app = __webpack_require__(1);
+	var _app = __webpack_require__(10);
 
 	var _app2 = _interopRequireDefault(_app);
 
-	var _labIntegration = __webpack_require__(19);
+	var _labIntegration = __webpack_require__(28);
 
 	var _labIntegration2 = _interopRequireDefault(_labIntegration);
 
@@ -71,1339 +71,8 @@
 	}
 
 /***/ },
-/* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _eventemitter = __webpack_require__(2);
-
-	var _eventemitter2 = _interopRequireDefault(_eventemitter);
-
-	var _utils = __webpack_require__(3);
-
-	var _physics = __webpack_require__(4);
-
-	var _engine = __webpack_require__(6);
-
-	var engine = _interopRequireWildcard(_engine);
-
-	var _view = __webpack_require__(7);
-
-	var _view2 = _interopRequireDefault(_view);
-
-	var _presets = __webpack_require__(18);
-
-	var _presets2 = _interopRequireDefault(_presets);
-
-	var _constants = __webpack_require__(5);
-
-	var _analyzeHabitability2 = __webpack_require__(27);
-
-	var _analyzeHabitability3 = _interopRequireDefault(_analyzeHabitability2);
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
-
-	var DEF_STATE = {
-	  time: 0, // [ year ]
-	  timestep: 0.001, // [ year ]
-	  star: {
-	    x: 'output', // [ AU ]           - depends on planet position
-	    y: 'output', // [ AU ]
-	    vx: 'output', // [ AU / year ]    - depends on planet velocity
-	    vy: 'output', // [ AU / year ]
-	    mass: _constants.SOLAR_MASS, // [ earth masses ]
-	    scale: 1,
-	    color: 0xFFFF00,
-	    type: 'G'
-	  },
-	  habitationZone: {
-	    visible: false,
-	    innerRadius: 0.95, // [ AU ]
-	    outerRadius: 1.37 // [ AU ]
-	  },
-	  planet: {
-	    x: 1, // [ AU ]
-	    y: 0, // [ AU ]
-	    vx: 'fakeValue', // [ AU / year ]      - velocity will be calculated dynamically later!
-	    vy: 'fakeValue', // [ AU / year ]        See #setCircularVelocity call below.
-	    diameter: 1, // [ earth diameter ] - diameter multiplier, 1 => earth diameter
-	    rocky: true
-	  },
-	  camera: {
-	    tiltLocked: false,
-	    tilt: 90, // [ deg ], between 0 and 90
-	    distance: 10, // [ AU ]
-	    zoom: 1
-	  },
-	  telescope: {
-	    precision: 100, // [0..100], affects starCamVelocity and lightIntensity
-	    starCamVelocity: 'output', // [ AU / year ]
-	    lightIntensity: 'output' // [0..1], 1 is default intensity without occultation
-	  }
-	};
-	// Velocity will be set in such a way so that its orbit is circular.
-	(0, _physics.makeCircularOrbit)(DEF_STATE.planet, DEF_STATE.star);
-
-	var _class = (function () {
-	  function _class(parentEl) {
-	    var _this = this;
-
-	    _classCallCheck(this, _class);
-
-	    this.state = (0, _utils.deepExtend)({}, DEF_STATE);
-	    engine.calculateOutputs(this.state);
-
-	    this.view = new _view2.default(parentEl);
-	    this.view.on('camera.change', function (cameraState) {
-	      _this.setState({ camera: cameraState });
-	    });
-	    this.view.on('planet.change', function (planetState) {
-	      _this.setState({ planet: planetState });
-	    });
-
-	    this.tick = 0;
-	    this.isPlaying = false;
-
-	    this.dispatch = new _eventemitter2.default();
-
-	    this._setupBreadCrumbs();
-
-	    this._rafCallback = this._rafCallback.bind(this);
-	    this._rafCallback();
-	  }
-
-	  _createClass(_class, [{
-	    key: 'on',
-	    value: function on() {
-	      // Delegate #on to EventEmitter object.
-	      this.dispatch.on.apply(this.dispatch, arguments);
-	    }
-	  }, {
-	    key: 'play',
-	    value: function play() {
-	      this.isPlaying = true;
-	      this.dispatch.emit('play');
-	    }
-	  }, {
-	    key: 'stop',
-	    value: function stop() {
-	      this.isPlaying = false;
-	      this.dispatch.emit('stop');
-	    }
-	  }, {
-	    key: 'loadPreset',
-	    value: function loadPreset(name) {
-	      this.setState(_presets2.default[name]);
-	    }
-	  }, {
-	    key: 'analyzeHabitability',
-	    value: function analyzeHabitability() {
-	      return (0, _analyzeHabitability3.default)(this.state.star, this.state.planet, this.state.habitationZone);
-	    }
-	  }, {
-	    key: 'resize',
-	    value: function resize() {
-	      this.view.resize();
-	    }
-	  }, {
-	    key: 'setState',
-	    value: function setState(newState) {
-	      (0, _utils.deepExtend)(this.state, newState);
-	      this._emitStateChange();
-	    }
-	  }, {
-	    key: 'makeCircularOrbit',
-	    value: function makeCircularOrbit() {
-	      (0, _physics.makeCircularOrbit)(this.state.planet, this.state.star);
-	      this._emitStateChange();
-	    }
-	  }, {
-	    key: '_rafCallback',
-	    value: function _rafCallback() {
-	      if (this.isPlaying) {
-	        engine.tick(this.state);
-	        this.tick += 1;
-	        this.dispatch.emit('tick', this.state);
-	      }
-	      // User can interact with the model only when it's paused.
-	      this.view.interactionEnabled = !this.isPlaying;
-	      this.view.setProps(this.state);
-	      this.view.render();
-	      this._rafID = requestAnimationFrame(this._rafCallback);
-	    }
-	  }, {
-	    key: '_setupBreadCrumbs',
-	    value: function _setupBreadCrumbs() {
-	      var _this2 = this;
-
-	      this.on('state.change', function (newState) {
-	        if (newState.planet.diameter === 0) _this2.view.clearBreadCrumbs();
-	      });
-	      this.on('tick', function (newState) {
-	        if (_this2.tick % BREAD_CRUMBS_INTERVAL === 0 && newState.planet.diameter > 0) {
-	          // Don't add bread crumbs when diameter === 0 what means that there is no planet.
-	          _this2.view.addBreadCrumb(newState.planet.x, newState.planet.y);
-	        }
-	      });
-	    }
-	  }, {
-	    key: '_emitStateChange',
-	    value: function _emitStateChange() {
-	      this.dispatch.emit('state.change', this.state);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
+/* 1 */,
 /* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	 * EventEmitter2
-	 * https://github.com/hij1nx/EventEmitter2
-	 *
-	 * Copyright (c) 2013 hij1nx
-	 * Licensed under the MIT license.
-	 */
-	;!function(undefined) {
-
-	  var isArray = Array.isArray ? Array.isArray : function _isArray(obj) {
-	    return Object.prototype.toString.call(obj) === "[object Array]";
-	  };
-	  var defaultMaxListeners = 10;
-
-	  function init() {
-	    this._events = {};
-	    if (this._conf) {
-	      configure.call(this, this._conf);
-	    }
-	  }
-
-	  function configure(conf) {
-	    if (conf) {
-
-	      this._conf = conf;
-
-	      conf.delimiter && (this.delimiter = conf.delimiter);
-	      conf.maxListeners && (this._events.maxListeners = conf.maxListeners);
-	      conf.wildcard && (this.wildcard = conf.wildcard);
-	      conf.newListener && (this.newListener = conf.newListener);
-
-	      if (this.wildcard) {
-	        this.listenerTree = {};
-	      }
-	    }
-	  }
-
-	  function EventEmitter(conf) {
-	    this._events = {};
-	    this.newListener = false;
-	    configure.call(this, conf);
-	  }
-
-	  //
-	  // Attention, function return type now is array, always !
-	  // It has zero elements if no any matches found and one or more
-	  // elements (leafs) if there are matches
-	  //
-	  function searchListenerTree(handlers, type, tree, i) {
-	    if (!tree) {
-	      return [];
-	    }
-	    var listeners=[], leaf, len, branch, xTree, xxTree, isolatedBranch, endReached,
-	        typeLength = type.length, currentType = type[i], nextType = type[i+1];
-	    if (i === typeLength && tree._listeners) {
-	      //
-	      // If at the end of the event(s) list and the tree has listeners
-	      // invoke those listeners.
-	      //
-	      if (typeof tree._listeners === 'function') {
-	        handlers && handlers.push(tree._listeners);
-	        return [tree];
-	      } else {
-	        for (leaf = 0, len = tree._listeners.length; leaf < len; leaf++) {
-	          handlers && handlers.push(tree._listeners[leaf]);
-	        }
-	        return [tree];
-	      }
-	    }
-
-	    if ((currentType === '*' || currentType === '**') || tree[currentType]) {
-	      //
-	      // If the event emitted is '*' at this part
-	      // or there is a concrete match at this patch
-	      //
-	      if (currentType === '*') {
-	        for (branch in tree) {
-	          if (branch !== '_listeners' && tree.hasOwnProperty(branch)) {
-	            listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i+1));
-	          }
-	        }
-	        return listeners;
-	      } else if(currentType === '**') {
-	        endReached = (i+1 === typeLength || (i+2 === typeLength && nextType === '*'));
-	        if(endReached && tree._listeners) {
-	          // The next element has a _listeners, add it to the handlers.
-	          listeners = listeners.concat(searchListenerTree(handlers, type, tree, typeLength));
-	        }
-
-	        for (branch in tree) {
-	          if (branch !== '_listeners' && tree.hasOwnProperty(branch)) {
-	            if(branch === '*' || branch === '**') {
-	              if(tree[branch]._listeners && !endReached) {
-	                listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], typeLength));
-	              }
-	              listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i));
-	            } else if(branch === nextType) {
-	              listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i+2));
-	            } else {
-	              // No match on this one, shift into the tree but not in the type array.
-	              listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i));
-	            }
-	          }
-	        }
-	        return listeners;
-	      }
-
-	      listeners = listeners.concat(searchListenerTree(handlers, type, tree[currentType], i+1));
-	    }
-
-	    xTree = tree['*'];
-	    if (xTree) {
-	      //
-	      // If the listener tree will allow any match for this part,
-	      // then recursively explore all branches of the tree
-	      //
-	      searchListenerTree(handlers, type, xTree, i+1);
-	    }
-
-	    xxTree = tree['**'];
-	    if(xxTree) {
-	      if(i < typeLength) {
-	        if(xxTree._listeners) {
-	          // If we have a listener on a '**', it will catch all, so add its handler.
-	          searchListenerTree(handlers, type, xxTree, typeLength);
-	        }
-
-	        // Build arrays of matching next branches and others.
-	        for(branch in xxTree) {
-	          if(branch !== '_listeners' && xxTree.hasOwnProperty(branch)) {
-	            if(branch === nextType) {
-	              // We know the next element will match, so jump twice.
-	              searchListenerTree(handlers, type, xxTree[branch], i+2);
-	            } else if(branch === currentType) {
-	              // Current node matches, move into the tree.
-	              searchListenerTree(handlers, type, xxTree[branch], i+1);
-	            } else {
-	              isolatedBranch = {};
-	              isolatedBranch[branch] = xxTree[branch];
-	              searchListenerTree(handlers, type, { '**': isolatedBranch }, i+1);
-	            }
-	          }
-	        }
-	      } else if(xxTree._listeners) {
-	        // We have reached the end and still on a '**'
-	        searchListenerTree(handlers, type, xxTree, typeLength);
-	      } else if(xxTree['*'] && xxTree['*']._listeners) {
-	        searchListenerTree(handlers, type, xxTree['*'], typeLength);
-	      }
-	    }
-
-	    return listeners;
-	  }
-
-	  function growListenerTree(type, listener) {
-
-	    type = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
-
-	    //
-	    // Looks for two consecutive '**', if so, don't add the event at all.
-	    //
-	    for(var i = 0, len = type.length; i+1 < len; i++) {
-	      if(type[i] === '**' && type[i+1] === '**') {
-	        return;
-	      }
-	    }
-
-	    var tree = this.listenerTree;
-	    var name = type.shift();
-
-	    while (name) {
-
-	      if (!tree[name]) {
-	        tree[name] = {};
-	      }
-
-	      tree = tree[name];
-
-	      if (type.length === 0) {
-
-	        if (!tree._listeners) {
-	          tree._listeners = listener;
-	        }
-	        else if(typeof tree._listeners === 'function') {
-	          tree._listeners = [tree._listeners, listener];
-	        }
-	        else if (isArray(tree._listeners)) {
-
-	          tree._listeners.push(listener);
-
-	          if (!tree._listeners.warned) {
-
-	            var m = defaultMaxListeners;
-
-	            if (typeof this._events.maxListeners !== 'undefined') {
-	              m = this._events.maxListeners;
-	            }
-
-	            if (m > 0 && tree._listeners.length > m) {
-
-	              tree._listeners.warned = true;
-	              console.error('(node) warning: possible EventEmitter memory ' +
-	                            'leak detected. %d listeners added. ' +
-	                            'Use emitter.setMaxListeners() to increase limit.',
-	                            tree._listeners.length);
-	              console.trace();
-	            }
-	          }
-	        }
-	        return true;
-	      }
-	      name = type.shift();
-	    }
-	    return true;
-	  }
-
-	  // By default EventEmitters will print a warning if more than
-	  // 10 listeners are added to it. This is a useful default which
-	  // helps finding memory leaks.
-	  //
-	  // Obviously not all Emitters should be limited to 10. This function allows
-	  // that to be increased. Set to zero for unlimited.
-
-	  EventEmitter.prototype.delimiter = '.';
-
-	  EventEmitter.prototype.setMaxListeners = function(n) {
-	    this._events || init.call(this);
-	    this._events.maxListeners = n;
-	    if (!this._conf) this._conf = {};
-	    this._conf.maxListeners = n;
-	  };
-
-	  EventEmitter.prototype.event = '';
-
-	  EventEmitter.prototype.once = function(event, fn) {
-	    this.many(event, 1, fn);
-	    return this;
-	  };
-
-	  EventEmitter.prototype.many = function(event, ttl, fn) {
-	    var self = this;
-
-	    if (typeof fn !== 'function') {
-	      throw new Error('many only accepts instances of Function');
-	    }
-
-	    function listener() {
-	      if (--ttl === 0) {
-	        self.off(event, listener);
-	      }
-	      fn.apply(this, arguments);
-	    }
-
-	    listener._origin = fn;
-
-	    this.on(event, listener);
-
-	    return self;
-	  };
-
-	  EventEmitter.prototype.emit = function() {
-
-	    this._events || init.call(this);
-
-	    var type = arguments[0];
-
-	    if (type === 'newListener' && !this.newListener) {
-	      if (!this._events.newListener) { return false; }
-	    }
-
-	    // Loop through the *_all* functions and invoke them.
-	    if (this._all) {
-	      var l = arguments.length;
-	      var args = new Array(l - 1);
-	      for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
-	      for (i = 0, l = this._all.length; i < l; i++) {
-	        this.event = type;
-	        this._all[i].apply(this, args);
-	      }
-	    }
-
-	    // If there is no 'error' event listener then throw.
-	    if (type === 'error') {
-
-	      if (!this._all &&
-	        !this._events.error &&
-	        !(this.wildcard && this.listenerTree.error)) {
-
-	        if (arguments[1] instanceof Error) {
-	          throw arguments[1]; // Unhandled 'error' event
-	        } else {
-	          throw new Error("Uncaught, unspecified 'error' event.");
-	        }
-	        return false;
-	      }
-	    }
-
-	    var handler;
-
-	    if(this.wildcard) {
-	      handler = [];
-	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
-	      searchListenerTree.call(this, handler, ns, this.listenerTree, 0);
-	    }
-	    else {
-	      handler = this._events[type];
-	    }
-
-	    if (typeof handler === 'function') {
-	      this.event = type;
-	      if (arguments.length === 1) {
-	        handler.call(this);
-	      }
-	      else if (arguments.length > 1)
-	        switch (arguments.length) {
-	          case 2:
-	            handler.call(this, arguments[1]);
-	            break;
-	          case 3:
-	            handler.call(this, arguments[1], arguments[2]);
-	            break;
-	          // slower
-	          default:
-	            var l = arguments.length;
-	            var args = new Array(l - 1);
-	            for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
-	            handler.apply(this, args);
-	        }
-	      return true;
-	    }
-	    else if (handler) {
-	      var l = arguments.length;
-	      var args = new Array(l - 1);
-	      for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
-
-	      var listeners = handler.slice();
-	      for (var i = 0, l = listeners.length; i < l; i++) {
-	        this.event = type;
-	        listeners[i].apply(this, args);
-	      }
-	      return (listeners.length > 0) || !!this._all;
-	    }
-	    else {
-	      return !!this._all;
-	    }
-
-	  };
-
-	  EventEmitter.prototype.on = function(type, listener) {
-
-	    if (typeof type === 'function') {
-	      this.onAny(type);
-	      return this;
-	    }
-
-	    if (typeof listener !== 'function') {
-	      throw new Error('on only accepts instances of Function');
-	    }
-	    this._events || init.call(this);
-
-	    // To avoid recursion in the case that type == "newListeners"! Before
-	    // adding it to the listeners, first emit "newListeners".
-	    this.emit('newListener', type, listener);
-
-	    if(this.wildcard) {
-	      growListenerTree.call(this, type, listener);
-	      return this;
-	    }
-
-	    if (!this._events[type]) {
-	      // Optimize the case of one listener. Don't need the extra array object.
-	      this._events[type] = listener;
-	    }
-	    else if(typeof this._events[type] === 'function') {
-	      // Adding the second element, need to change to array.
-	      this._events[type] = [this._events[type], listener];
-	    }
-	    else if (isArray(this._events[type])) {
-	      // If we've already got an array, just append.
-	      this._events[type].push(listener);
-
-	      // Check for listener leak
-	      if (!this._events[type].warned) {
-
-	        var m = defaultMaxListeners;
-
-	        if (typeof this._events.maxListeners !== 'undefined') {
-	          m = this._events.maxListeners;
-	        }
-
-	        if (m > 0 && this._events[type].length > m) {
-
-	          this._events[type].warned = true;
-	          console.error('(node) warning: possible EventEmitter memory ' +
-	                        'leak detected. %d listeners added. ' +
-	                        'Use emitter.setMaxListeners() to increase limit.',
-	                        this._events[type].length);
-	          console.trace();
-	        }
-	      }
-	    }
-	    return this;
-	  };
-
-	  EventEmitter.prototype.onAny = function(fn) {
-
-	    if (typeof fn !== 'function') {
-	      throw new Error('onAny only accepts instances of Function');
-	    }
-
-	    if(!this._all) {
-	      this._all = [];
-	    }
-
-	    // Add the function to the event listener collection.
-	    this._all.push(fn);
-	    return this;
-	  };
-
-	  EventEmitter.prototype.addListener = EventEmitter.prototype.on;
-
-	  EventEmitter.prototype.off = function(type, listener) {
-	    if (typeof listener !== 'function') {
-	      throw new Error('removeListener only takes instances of Function');
-	    }
-
-	    var handlers,leafs=[];
-
-	    if(this.wildcard) {
-	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
-	      leafs = searchListenerTree.call(this, null, ns, this.listenerTree, 0);
-	    }
-	    else {
-	      // does not use listeners(), so no side effect of creating _events[type]
-	      if (!this._events[type]) return this;
-	      handlers = this._events[type];
-	      leafs.push({_listeners:handlers});
-	    }
-
-	    for (var iLeaf=0; iLeaf<leafs.length; iLeaf++) {
-	      var leaf = leafs[iLeaf];
-	      handlers = leaf._listeners;
-	      if (isArray(handlers)) {
-
-	        var position = -1;
-
-	        for (var i = 0, length = handlers.length; i < length; i++) {
-	          if (handlers[i] === listener ||
-	            (handlers[i].listener && handlers[i].listener === listener) ||
-	            (handlers[i]._origin && handlers[i]._origin === listener)) {
-	            position = i;
-	            break;
-	          }
-	        }
-
-	        if (position < 0) {
-	          continue;
-	        }
-
-	        if(this.wildcard) {
-	          leaf._listeners.splice(position, 1);
-	        }
-	        else {
-	          this._events[type].splice(position, 1);
-	        }
-
-	        if (handlers.length === 0) {
-	          if(this.wildcard) {
-	            delete leaf._listeners;
-	          }
-	          else {
-	            delete this._events[type];
-	          }
-	        }
-	        return this;
-	      }
-	      else if (handlers === listener ||
-	        (handlers.listener && handlers.listener === listener) ||
-	        (handlers._origin && handlers._origin === listener)) {
-	        if(this.wildcard) {
-	          delete leaf._listeners;
-	        }
-	        else {
-	          delete this._events[type];
-	        }
-	      }
-	    }
-
-	    return this;
-	  };
-
-	  EventEmitter.prototype.offAny = function(fn) {
-	    var i = 0, l = 0, fns;
-	    if (fn && this._all && this._all.length > 0) {
-	      fns = this._all;
-	      for(i = 0, l = fns.length; i < l; i++) {
-	        if(fn === fns[i]) {
-	          fns.splice(i, 1);
-	          return this;
-	        }
-	      }
-	    } else {
-	      this._all = [];
-	    }
-	    return this;
-	  };
-
-	  EventEmitter.prototype.removeListener = EventEmitter.prototype.off;
-
-	  EventEmitter.prototype.removeAllListeners = function(type) {
-	    if (arguments.length === 0) {
-	      !this._events || init.call(this);
-	      return this;
-	    }
-
-	    if(this.wildcard) {
-	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
-	      var leafs = searchListenerTree.call(this, null, ns, this.listenerTree, 0);
-
-	      for (var iLeaf=0; iLeaf<leafs.length; iLeaf++) {
-	        var leaf = leafs[iLeaf];
-	        leaf._listeners = null;
-	      }
-	    }
-	    else {
-	      if (!this._events[type]) return this;
-	      this._events[type] = null;
-	    }
-	    return this;
-	  };
-
-	  EventEmitter.prototype.listeners = function(type) {
-	    if(this.wildcard) {
-	      var handlers = [];
-	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
-	      searchListenerTree.call(this, handlers, ns, this.listenerTree, 0);
-	      return handlers;
-	    }
-
-	    this._events || init.call(this);
-
-	    if (!this._events[type]) this._events[type] = [];
-	    if (!isArray(this._events[type])) {
-	      this._events[type] = [this._events[type]];
-	    }
-	    return this._events[type];
-	  };
-
-	  EventEmitter.prototype.listenersAny = function() {
-
-	    if(this._all) {
-	      return this._all;
-	    }
-	    else {
-	      return [];
-	    }
-
-	  };
-
-	  if (true) {
-	     // AMD. Register as an anonymous module.
-	    !(__WEBPACK_AMD_DEFINE_RESULT__ = function() {
-	      return EventEmitter;
-	    }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	  } else if (typeof exports === 'object') {
-	    // CommonJS
-	    exports.EventEmitter2 = EventEmitter;
-	  }
-	  else {
-	    // Browser global.
-	    window.EventEmitter2 = EventEmitter;
-	  }
-	}();
-
-
-/***/ },
-/* 3 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.extend = extend;
-	exports.deepExtend = deepExtend;
-
-	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
-	// Simplified jQuery.extend, based on from:
-	// https://github.com/jquery/jquery/blob/22449eb968622c2e14d6c8d8de2cf1e1ba4adccd/src/core.js#L118-L185
-	function extend() {
-	  var options,
-	      name,
-	      src,
-	      copy,
-	      copyIsArray,
-	      clone,
-	      target = arguments[0] || {},
-	      i = 1,
-	      length = arguments.length,
-	      deep = false;
-	  // Handle a deep copy situation
-	  if (typeof target === "boolean") {
-	    deep = target;
-	    // Skip the boolean and the target
-	    target = arguments[i] || {};
-	    i++;
-	  }
-	  // Handle case when target is a string or something (possible in deep copy)
-	  if ((typeof target === "undefined" ? "undefined" : _typeof(target)) !== "object") {
-	    target = {};
-	  }
-	  for (; i < length; i++) {
-	    // Only deal with non-null/undefined values
-	    if ((options = arguments[i]) != null) {
-	      // Extend the base object
-	      for (name in options) {
-	        src = target[name];
-	        copy = options[name];
-	        // Prevent never-ending loop
-	        if (target === copy) {
-	          continue;
-	        }
-	        // Recurse if we're merging plain objects or arrays
-	        if (deep && copy && (isPlainObject(copy) || (copyIsArray = Array.isArray(copy)))) {
-	          if (copyIsArray) {
-	            copyIsArray = false;
-	            clone = src && Array.isArray(src) ? src : [];
-	          } else {
-	            clone = src && isPlainObject(src) ? src : {};
-	          }
-	          // Never move original objects, clone them
-	          target[name] = extend(deep, clone, copy);
-	          // Don't bring in undefined values
-	        } else if (copy !== undefined) {
-	            target[name] = copy;
-	          }
-	      }
-	    }
-	  }
-	  // Return the modified object
-	  return target;
-	}
-
-	// Same as extend, but passing true as a first parameter.
-	function deepExtend() {
-	  var args = Array.prototype.slice.call(arguments);
-	  args.unshift(true);
-	  return extend.apply(null, args);
-	}
-
-	function isPlainObject(obj) {
-	  return (typeof obj === "undefined" ? "undefined" : _typeof(obj)) === "object";
-	}
-
-/***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.updatePlanet = updatePlanet;
-	exports.updateStar = updateStar;
-	exports.updateTelescope = updateTelescope;
-	exports.makeCircularOrbit = makeCircularOrbit;
-	exports.starCamVelocity = starCamVelocity;
-	exports.lightIntensity = lightIntensity;
-	exports.occultation = occultation;
-	exports.planetMass = planetMass;
-
-	var _constants = __webpack_require__(5);
-
-	var DEG_2_RAD = Math.PI / 180;
-	// The universal gravitational constant in AU, years, and earth-mass units.
-	var G = 0 - 2 * 5.922e-5;
-	// The relative density compared to Earth.
-	var ROCKY_PLANET_DENSITY = 1;
-	// The relative density of Jupiter compared to Earth.
-	var GAS_PLANET_DENSITY = 1 / 4.13;
-
-	var ERR_MSG = 'The model has diverged. Decrease timestep or velocity of the planet.';
-
-	function updatePlanet(star, planet, timestep) {
-	  leapFrog(star, planet, timestep);
-	  if (isNaN(planet.x + planet.y + planet.vx + planet.vy)) {
-	    alert(ERR_MSG);
-	    throw new Error(ERR_MSG);
-	  }
-	}
-
-	function updateStar(star, planet) {
-	  var rho = -planetMass(planet) / star.mass;
-	  star.x = rho * planet.x;
-	  star.y = rho * planet.y;
-	  star.vx = rho * planet.vx;
-	  star.vy = rho * planet.vy;
-	}
-
-	function updateTelescope(telescope, star, planet, camera, timestep) {
-	  telescope.starCamVelocity = starCamVelocity(star, camera, timestep);
-	  telescope.lightIntensity = lightIntensity(star, planet, camera);
-
-	  if (telescope.precision < 100) {
-	    // Add random noise.
-	    telescope.starCamVelocity += 0.15 * (Math.random() * 2 - 1) / telescope.precision;
-	    telescope.lightIntensity += 0.3 * -Math.random() / telescope.precision;
-	  }
-	}
-
-	function makeCircularOrbit(planet, star) {
-	  var p = planet;
-	  var a = Math.atan2(p.x, p.y);
-	  var d = Math.sqrt(p.x * p.x + p.y * p.y);
-	  var v = 2 * Math.PI / Math.sqrt(d) * Math.sqrt(star.mass / _constants.SOLAR_MASS);
-	  p.vx = -v * Math.cos(a);
-	  p.vy = v * Math.sin(a);
-	}
-
-	function starCamVelocity(star, camera, timestep) {
-	  if (camera.tilt === 90) {
-	    // Special case, we don't want any numerical errors here even for large timestep.
-	    return 0;
-	  }
-	  var cameraX = 0;
-	  var cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
-	  var cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
-	  var newStarX = star.x + star.vx * timestep;
-	  var newStarY = star.y + star.vy * timestep;
-	  var oldDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
-	  var newDist = dist(newStarX, newStarY, 0, cameraX, cameraY, cameraZ);
-	  return (newDist - oldDist) / timestep;
-	}
-
-	function lightIntensity(star, planet, camera) {
-	  if (occultation(star, planet, camera)) {
-	    return 1 - Math.pow(planet.diameter / 100, 2);
-	  }
-	  return 1;
-	}
-
-	function occultation(star, planet, camera) {
-	  if (Math.abs(camera.tilt) > 0.1) {
-	    return false;
-	  }
-	  if (camera.distance < distObj(planet, { x: 0, y: 0 })) {
-	    // Planet is behind the camera.
-	    return false;
-	  }
-	  if (planet.y > 0) {
-	    // Planet is behind the star.
-	    return false;
-	  }
-	  // This assumes that camera position is limited to XZ plane (so Y is always == 0)
-	  // and it always looks at (0, 0, 0) point.
-	  return Math.abs(star.x - planet.x) < _constants.PLANET_RADIUS + _constants.STAR_RADIUS;
-	}
-
-	function planetMass(planet) {
-	  var density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
-	  return density * Math.pow(planet.diameter, 3);
-	}
-
-	function dist(x1, y1, z1, x2, y2, z2) {
-	  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
-	}
-
-	function distObj(a, b) {
-	  // Planet and star objects don't specify Z coord, as it's always equal to 0.
-	  return dist(a.x, a.y, a.z || 0, b.x, b.y, b.z || 0);
-	}
-
-	function euler(s, p, dt) {
-	  p.x += p.vx * dt * 0.5;
-	  p.y += p.vy * dt * 0.5;
-	  var factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
-	  var ax = p.x * factor;
-	  var ay = p.y * factor;
-	  p.vx += ax * dt;
-	  p.vy += ay * dt;
-	  p.x += p.vx * dt * 0.5;
-	  p.y += p.vy * dt * 0.5;
-	}
-
-	function leapFrog(s, p, dt) {
-	  var factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
-	  var a1x = p.x * factor;
-	  var a1y = p.y * factor;
-	  p.x += p.vx * dt + 0.5 * a1x * dt * dt;
-	  p.y += p.vy * dt + 0.5 * a1y * dt * dt;
-	  factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
-	  var a2x = p.x * factor;
-	  var a2y = p.y * factor;
-	  p.vx += 0.5 * (a1x + a2x) * dt;
-	  p.vy += 0.5 * (a1y + a2y) * dt;
-	}
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var SF = exports.SF = 1000; // scale factor, conversion between model unit [AU] and view unit
-
-	var STAR_RADIUS = exports.STAR_RADIUS = 0.16; // [ AU ]
-	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05; // [ AU ]
-
-	var SOLAR_MASS_KG = 1.99e30; // [ kg ]
-	var EARTH_MASS_KG = 5.97e24; // [ kg ]
-	var SOLAR_MASS = exports.SOLAR_MASS = SOLAR_MASS_KG / EARTH_MASS_KG; // [ earth masses ]
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.tick = tick;
-	exports.calculateOutputs = calculateOutputs;
-
-	var _utils = __webpack_require__(3);
-
-	var _physics = __webpack_require__(4);
-
-	var MAX_TIMESTEP = 0.005;
-
-	function tick(state) {
-	  // Make sure that integration isn't using too big timestep, so it's still reasonably accurate.
-	  var dt = Math.min(MAX_TIMESTEP, state.timestep);
-	  var steps = Math.round(state.timestep / dt);
-	  for (var i = 0; i < steps; i++) {
-	    (0, _physics.updatePlanet)(state.star, state.planet, dt);
-	    state.time += dt;
-	  }
-	  calculateOutputs(state);
-	}
-
-	function calculateOutputs(state) {
-	  // Note that star position and velocity depends strictly on planet, so it's an output in fact.
-	  (0, _physics.updateStar)(state.star, state.planet);
-	  (0, _physics.updateTelescope)(state.telescope, state.star, state.planet, state.camera, state.timestep);
-	}
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _jquery = __webpack_require__(8);
-
-	var _jquery2 = _interopRequireDefault(_jquery);
-
-	var _eventemitter = __webpack_require__(2);
-
-	var _eventemitter2 = _interopRequireDefault(_eventemitter);
-
-	var _star = __webpack_require__(9);
-
-	var _star2 = _interopRequireDefault(_star);
-
-	var _planet = __webpack_require__(10);
-
-	var _planet2 = _interopRequireDefault(_planet);
-
-	var _grid = __webpack_require__(12);
-
-	var _grid2 = _interopRequireDefault(_grid);
-
-	var _breadCrumbs = __webpack_require__(15);
-
-	var _breadCrumbs2 = _interopRequireDefault(_breadCrumbs);
-
-	var _habitationZone = __webpack_require__(25);
-
-	var _habitationZone2 = _interopRequireDefault(_habitationZone);
-
-	var _camera = __webpack_require__(16);
-
-	var _camera2 = _interopRequireDefault(_camera);
-
-	var _interactionsManager = __webpack_require__(17);
-
-	var _interactionsManager2 = _interopRequireDefault(_interactionsManager);
-
-	var _constants = __webpack_require__(5);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	// Let user know that he can change the tilt.
-	var TILT_CURSOR = 'ns-resize';
-
-	var _class = (function () {
-	  function _class(parentEl) {
-	    var _this = this;
-
-	    _classCallCheck(this, _class);
-
-	    this.renderer = webglAvailable() ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
-	    this.renderer.setPixelRatio(window.devicePixelRatio);
-	    parentEl.appendChild(this.renderer.domElement);
-
-	    this._addHTMLDisplay(parentEl);
-
-	    this.camera = new _camera2.default(this.renderer.domElement);
-	    this.camera.onChange(function () {
-	      _this.dispatch.emit('camera.change', _this.camera.getProps());
-	    });
-
-	    this.dispatch = new _eventemitter2.default();
-
-	    this.scene = new THREE.Scene();
-	    this._initScene();
-
-	    this.interactionEnabled = true;
-	    this.interactionsManager = new _interactionsManager2.default(this.renderer.domElement, this.camera);
-	    this._initInteractions();
-
-	    this.resize();
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      this.star.setProps(props.star);
-	      this.habitationZone.setProps(props.habitationZone);
-	      this.planet.setProps(props.planet);
-	      this.camera.setProps(props.camera);
-
-	      this._setupZoomLevel(props.camera.zoom);
-
-	      this._showTilt(props.camera.tiltLocked ? false : props.camera.tilt.toFixed(2));
-	    }
-	  }, {
-	    key: 'getCameraTilt',
-	    value: function getCameraTilt() {
-	      return this.camera.tilt;
-	    }
-	  }, {
-	    key: 'addBreadCrumb',
-	    value: function addBreadCrumb(x, y) {
-	      this.breadCrumbs.addBreadCrumb(x, y);
-	    }
-	  }, {
-	    key: 'clearBreadCrumbs',
-	    value: function clearBreadCrumbs() {
-	      this.breadCrumbs.clear();
-	    }
-
-	    // Delegate #on to EventEmitter object.
-
-	  }, {
-	    key: 'on',
-	    value: function on() {
-	      this.dispatch.on.apply(this.dispatch, arguments);
-	    }
-	  }, {
-	    key: 'render',
-	    value: function render() {
-	      this.camera.update();
-	      this.renderer.render(this.scene, this.camera.camera);
-	      if (this.interactionEnabled) {
-	        this.interactionsManager.checkInteraction();
-	      }
-	    }
-
-	    // Resizes canvas to fill its parent.
-
-	  }, {
-	    key: 'resize',
-	    value: function resize() {
-	      var parent = this.renderer.domElement.parentElement;
-	      var newWidth = parent.clientWidth;
-	      var newHeight = parent.clientHeight;
-	      this.renderer.setSize(newWidth, newHeight);
-	      this.camera.setSize(newWidth, newHeight);
-	      this.$display.css('font-size', newHeight / 26 + 'px');
-	    }
-	  }, {
-	    key: '_addHTMLDisplay',
-	    value: function _addHTMLDisplay(parentEl) {
-	      this.$display = (0, _jquery2.default)('<div class="display">The tilt is <span class="tilt-val"></span> degrees</div>');
-	      this.$display.css({
-	        position: 'absolute',
-	        bottom: '5px',
-	        right: '5px',
-	        color: '#fff',
-	        fontFamily: 'Arial',
-	        pointerEvents: 'none'
-	      });
-	      this.$display.appendTo(parentEl);
-	      this.$tiltVal = this.$display.find('.tilt-val');
-	      this.$tiltVal.css({
-	        fontWeight: 'bold'
-	      });
-	    }
-	  }, {
-	    key: '_setCursor',
-	    value: function _setCursor(cursor) {
-	      this.renderer.domElement.style.cursor = cursor || this._mainCursor;
-	    }
-
-	    // If 'tilt' is a number, it shows it at the bottom of the screen.
-	    // If it's false, it hides the display.
-
-	  }, {
-	    key: '_showTilt',
-	    value: function _showTilt(tilt) {
-	      if (!this._tilt && tilt) {
-	        this.$display.show();
-	        this._mainCursor = TILT_CURSOR;
-	        this._setCursor();
-	      } else if (this._tilt && !tilt) {
-	        this.$display.hide();
-	        this._mainCursor = '';
-	        this._setCursor();
-	      }
-	      if (this._tilt !== tilt) {
-	        this.$tiltVal.text(tilt);
-	        this._tilt = tilt;
-	      }
-	    }
-
-	    // Updates grid size and makes certain objects bigger so they are still visible.
-
-	  }, {
-	    key: '_setupZoomLevel',
-	    value: function _setupZoomLevel(zoom) {
-	      var gridSize = gridSizeForZoom(zoom);
-	      this.grid.size = gridSize;
-	    }
-	  }, {
-	    key: '_initScene',
-	    value: function _initScene() {
-	      this.grid = new _grid2.default();
-	      this.star = new _star2.default();
-	      this.habitationZone = new _habitationZone2.default();
-	      this.planet = new _planet2.default();
-	      this.breadCrumbs = new _breadCrumbs2.default();
-	      this.scene.add(this.grid.rootObject);
-	      this.scene.add(this.star.rootObject);
-	      this.scene.add(this.habitationZone.rootObject);
-	      this.scene.add(this.planet.rootObject);
-	      this.scene.add(this.breadCrumbs.rootObject);
-	      this.scene.add(new THREE.AmbientLight(0x202020));
-	    }
-	  }, {
-	    key: '_initInteractions',
-	    value: function _initInteractions() {
-	      var _this2 = this;
-
-	      // Earth dragging.
-	      this.interactionsManager.registerInteraction({
-	        test: function test() {
-	          return _this2.interactionsManager.isUserPointing(_this2.planet.mesh);
-	        },
-	        activationChangeHandler: function activationChangeHandler(isActive) {
-	          _this2.planet.setHighlighted(isActive);
-	          _this2._setCursor(isActive ? 'move' : null);
-	        },
-	        stepHandler: function stepHandler() {
-	          var coords = _this2.interactionsManager.pointerToXYPlane();
-	          _this2.dispatch.emit('planet.change', { x: coords.x / _constants.SF, y: coords.y / _constants.SF });
-	        }
-	      });
-	      // Velocity arrow(head) dragging.
-	      this.interactionsManager.registerInteraction({
-	        test: function test() {
-	          return _this2.interactionsManager.isUserPointing(_this2.planet.velocityArrow.headMesh);
-	        },
-	        activationChangeHandler: function activationChangeHandler(isActive) {
-	          _this2.planet.velocityArrow.setHighlighted(isActive);
-	          _this2._setCursor(isActive ? 'move' : null);
-	        },
-	        stepHandler: function stepHandler() {
-	          var coords = _this2.interactionsManager.pointerToXYPlane();
-	          // Calculate coordinates of new velocity vector in view units.
-	          var vx = coords.x - _this2.planet.position.x;
-	          var vy = coords.y - _this2.planet.position.y;
-	          _this2.dispatch.emit('planet.change', _this2.planet.velocityViewUnit2AU(vx, vy));
-	        }
-	      });
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-	function gridSizeForZoom(zoom) {
-	  if (zoom >= 2) {
-	    return 1;
-	  }
-	  if (zoom >= 0.5) {
-	    return 2;
-	  }
-	  return 5;
-	}
-
-	function webglAvailable() {
-	  try {
-	    var canvas = document.createElement('canvas');
-	    return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-	  } catch (e) {
-	    return false;
-	  }
-	}
-
-/***/ },
-/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -10619,7 +9288,1077 @@
 
 
 /***/ },
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	 * EventEmitter2
+	 * https://github.com/hij1nx/EventEmitter2
+	 *
+	 * Copyright (c) 2013 hij1nx
+	 * Licensed under the MIT license.
+	 */
+	;!function(undefined) {
+
+	  var isArray = Array.isArray ? Array.isArray : function _isArray(obj) {
+	    return Object.prototype.toString.call(obj) === "[object Array]";
+	  };
+	  var defaultMaxListeners = 10;
+
+	  function init() {
+	    this._events = {};
+	    if (this._conf) {
+	      configure.call(this, this._conf);
+	    }
+	  }
+
+	  function configure(conf) {
+	    if (conf) {
+
+	      this._conf = conf;
+
+	      conf.delimiter && (this.delimiter = conf.delimiter);
+	      conf.maxListeners && (this._events.maxListeners = conf.maxListeners);
+	      conf.wildcard && (this.wildcard = conf.wildcard);
+	      conf.newListener && (this.newListener = conf.newListener);
+
+	      if (this.wildcard) {
+	        this.listenerTree = {};
+	      }
+	    }
+	  }
+
+	  function EventEmitter(conf) {
+	    this._events = {};
+	    this.newListener = false;
+	    configure.call(this, conf);
+	  }
+
+	  //
+	  // Attention, function return type now is array, always !
+	  // It has zero elements if no any matches found and one or more
+	  // elements (leafs) if there are matches
+	  //
+	  function searchListenerTree(handlers, type, tree, i) {
+	    if (!tree) {
+	      return [];
+	    }
+	    var listeners=[], leaf, len, branch, xTree, xxTree, isolatedBranch, endReached,
+	        typeLength = type.length, currentType = type[i], nextType = type[i+1];
+	    if (i === typeLength && tree._listeners) {
+	      //
+	      // If at the end of the event(s) list and the tree has listeners
+	      // invoke those listeners.
+	      //
+	      if (typeof tree._listeners === 'function') {
+	        handlers && handlers.push(tree._listeners);
+	        return [tree];
+	      } else {
+	        for (leaf = 0, len = tree._listeners.length; leaf < len; leaf++) {
+	          handlers && handlers.push(tree._listeners[leaf]);
+	        }
+	        return [tree];
+	      }
+	    }
+
+	    if ((currentType === '*' || currentType === '**') || tree[currentType]) {
+	      //
+	      // If the event emitted is '*' at this part
+	      // or there is a concrete match at this patch
+	      //
+	      if (currentType === '*') {
+	        for (branch in tree) {
+	          if (branch !== '_listeners' && tree.hasOwnProperty(branch)) {
+	            listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i+1));
+	          }
+	        }
+	        return listeners;
+	      } else if(currentType === '**') {
+	        endReached = (i+1 === typeLength || (i+2 === typeLength && nextType === '*'));
+	        if(endReached && tree._listeners) {
+	          // The next element has a _listeners, add it to the handlers.
+	          listeners = listeners.concat(searchListenerTree(handlers, type, tree, typeLength));
+	        }
+
+	        for (branch in tree) {
+	          if (branch !== '_listeners' && tree.hasOwnProperty(branch)) {
+	            if(branch === '*' || branch === '**') {
+	              if(tree[branch]._listeners && !endReached) {
+	                listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], typeLength));
+	              }
+	              listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i));
+	            } else if(branch === nextType) {
+	              listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i+2));
+	            } else {
+	              // No match on this one, shift into the tree but not in the type array.
+	              listeners = listeners.concat(searchListenerTree(handlers, type, tree[branch], i));
+	            }
+	          }
+	        }
+	        return listeners;
+	      }
+
+	      listeners = listeners.concat(searchListenerTree(handlers, type, tree[currentType], i+1));
+	    }
+
+	    xTree = tree['*'];
+	    if (xTree) {
+	      //
+	      // If the listener tree will allow any match for this part,
+	      // then recursively explore all branches of the tree
+	      //
+	      searchListenerTree(handlers, type, xTree, i+1);
+	    }
+
+	    xxTree = tree['**'];
+	    if(xxTree) {
+	      if(i < typeLength) {
+	        if(xxTree._listeners) {
+	          // If we have a listener on a '**', it will catch all, so add its handler.
+	          searchListenerTree(handlers, type, xxTree, typeLength);
+	        }
+
+	        // Build arrays of matching next branches and others.
+	        for(branch in xxTree) {
+	          if(branch !== '_listeners' && xxTree.hasOwnProperty(branch)) {
+	            if(branch === nextType) {
+	              // We know the next element will match, so jump twice.
+	              searchListenerTree(handlers, type, xxTree[branch], i+2);
+	            } else if(branch === currentType) {
+	              // Current node matches, move into the tree.
+	              searchListenerTree(handlers, type, xxTree[branch], i+1);
+	            } else {
+	              isolatedBranch = {};
+	              isolatedBranch[branch] = xxTree[branch];
+	              searchListenerTree(handlers, type, { '**': isolatedBranch }, i+1);
+	            }
+	          }
+	        }
+	      } else if(xxTree._listeners) {
+	        // We have reached the end and still on a '**'
+	        searchListenerTree(handlers, type, xxTree, typeLength);
+	      } else if(xxTree['*'] && xxTree['*']._listeners) {
+	        searchListenerTree(handlers, type, xxTree['*'], typeLength);
+	      }
+	    }
+
+	    return listeners;
+	  }
+
+	  function growListenerTree(type, listener) {
+
+	    type = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
+
+	    //
+	    // Looks for two consecutive '**', if so, don't add the event at all.
+	    //
+	    for(var i = 0, len = type.length; i+1 < len; i++) {
+	      if(type[i] === '**' && type[i+1] === '**') {
+	        return;
+	      }
+	    }
+
+	    var tree = this.listenerTree;
+	    var name = type.shift();
+
+	    while (name) {
+
+	      if (!tree[name]) {
+	        tree[name] = {};
+	      }
+
+	      tree = tree[name];
+
+	      if (type.length === 0) {
+
+	        if (!tree._listeners) {
+	          tree._listeners = listener;
+	        }
+	        else if(typeof tree._listeners === 'function') {
+	          tree._listeners = [tree._listeners, listener];
+	        }
+	        else if (isArray(tree._listeners)) {
+
+	          tree._listeners.push(listener);
+
+	          if (!tree._listeners.warned) {
+
+	            var m = defaultMaxListeners;
+
+	            if (typeof this._events.maxListeners !== 'undefined') {
+	              m = this._events.maxListeners;
+	            }
+
+	            if (m > 0 && tree._listeners.length > m) {
+
+	              tree._listeners.warned = true;
+	              console.error('(node) warning: possible EventEmitter memory ' +
+	                            'leak detected. %d listeners added. ' +
+	                            'Use emitter.setMaxListeners() to increase limit.',
+	                            tree._listeners.length);
+	              console.trace();
+	            }
+	          }
+	        }
+	        return true;
+	      }
+	      name = type.shift();
+	    }
+	    return true;
+	  }
+
+	  // By default EventEmitters will print a warning if more than
+	  // 10 listeners are added to it. This is a useful default which
+	  // helps finding memory leaks.
+	  //
+	  // Obviously not all Emitters should be limited to 10. This function allows
+	  // that to be increased. Set to zero for unlimited.
+
+	  EventEmitter.prototype.delimiter = '.';
+
+	  EventEmitter.prototype.setMaxListeners = function(n) {
+	    this._events || init.call(this);
+	    this._events.maxListeners = n;
+	    if (!this._conf) this._conf = {};
+	    this._conf.maxListeners = n;
+	  };
+
+	  EventEmitter.prototype.event = '';
+
+	  EventEmitter.prototype.once = function(event, fn) {
+	    this.many(event, 1, fn);
+	    return this;
+	  };
+
+	  EventEmitter.prototype.many = function(event, ttl, fn) {
+	    var self = this;
+
+	    if (typeof fn !== 'function') {
+	      throw new Error('many only accepts instances of Function');
+	    }
+
+	    function listener() {
+	      if (--ttl === 0) {
+	        self.off(event, listener);
+	      }
+	      fn.apply(this, arguments);
+	    }
+
+	    listener._origin = fn;
+
+	    this.on(event, listener);
+
+	    return self;
+	  };
+
+	  EventEmitter.prototype.emit = function() {
+
+	    this._events || init.call(this);
+
+	    var type = arguments[0];
+
+	    if (type === 'newListener' && !this.newListener) {
+	      if (!this._events.newListener) { return false; }
+	    }
+
+	    // Loop through the *_all* functions and invoke them.
+	    if (this._all) {
+	      var l = arguments.length;
+	      var args = new Array(l - 1);
+	      for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
+	      for (i = 0, l = this._all.length; i < l; i++) {
+	        this.event = type;
+	        this._all[i].apply(this, args);
+	      }
+	    }
+
+	    // If there is no 'error' event listener then throw.
+	    if (type === 'error') {
+
+	      if (!this._all &&
+	        !this._events.error &&
+	        !(this.wildcard && this.listenerTree.error)) {
+
+	        if (arguments[1] instanceof Error) {
+	          throw arguments[1]; // Unhandled 'error' event
+	        } else {
+	          throw new Error("Uncaught, unspecified 'error' event.");
+	        }
+	        return false;
+	      }
+	    }
+
+	    var handler;
+
+	    if(this.wildcard) {
+	      handler = [];
+	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
+	      searchListenerTree.call(this, handler, ns, this.listenerTree, 0);
+	    }
+	    else {
+	      handler = this._events[type];
+	    }
+
+	    if (typeof handler === 'function') {
+	      this.event = type;
+	      if (arguments.length === 1) {
+	        handler.call(this);
+	      }
+	      else if (arguments.length > 1)
+	        switch (arguments.length) {
+	          case 2:
+	            handler.call(this, arguments[1]);
+	            break;
+	          case 3:
+	            handler.call(this, arguments[1], arguments[2]);
+	            break;
+	          // slower
+	          default:
+	            var l = arguments.length;
+	            var args = new Array(l - 1);
+	            for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
+	            handler.apply(this, args);
+	        }
+	      return true;
+	    }
+	    else if (handler) {
+	      var l = arguments.length;
+	      var args = new Array(l - 1);
+	      for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
+
+	      var listeners = handler.slice();
+	      for (var i = 0, l = listeners.length; i < l; i++) {
+	        this.event = type;
+	        listeners[i].apply(this, args);
+	      }
+	      return (listeners.length > 0) || !!this._all;
+	    }
+	    else {
+	      return !!this._all;
+	    }
+
+	  };
+
+	  EventEmitter.prototype.on = function(type, listener) {
+
+	    if (typeof type === 'function') {
+	      this.onAny(type);
+	      return this;
+	    }
+
+	    if (typeof listener !== 'function') {
+	      throw new Error('on only accepts instances of Function');
+	    }
+	    this._events || init.call(this);
+
+	    // To avoid recursion in the case that type == "newListeners"! Before
+	    // adding it to the listeners, first emit "newListeners".
+	    this.emit('newListener', type, listener);
+
+	    if(this.wildcard) {
+	      growListenerTree.call(this, type, listener);
+	      return this;
+	    }
+
+	    if (!this._events[type]) {
+	      // Optimize the case of one listener. Don't need the extra array object.
+	      this._events[type] = listener;
+	    }
+	    else if(typeof this._events[type] === 'function') {
+	      // Adding the second element, need to change to array.
+	      this._events[type] = [this._events[type], listener];
+	    }
+	    else if (isArray(this._events[type])) {
+	      // If we've already got an array, just append.
+	      this._events[type].push(listener);
+
+	      // Check for listener leak
+	      if (!this._events[type].warned) {
+
+	        var m = defaultMaxListeners;
+
+	        if (typeof this._events.maxListeners !== 'undefined') {
+	          m = this._events.maxListeners;
+	        }
+
+	        if (m > 0 && this._events[type].length > m) {
+
+	          this._events[type].warned = true;
+	          console.error('(node) warning: possible EventEmitter memory ' +
+	                        'leak detected. %d listeners added. ' +
+	                        'Use emitter.setMaxListeners() to increase limit.',
+	                        this._events[type].length);
+	          console.trace();
+	        }
+	      }
+	    }
+	    return this;
+	  };
+
+	  EventEmitter.prototype.onAny = function(fn) {
+
+	    if (typeof fn !== 'function') {
+	      throw new Error('onAny only accepts instances of Function');
+	    }
+
+	    if(!this._all) {
+	      this._all = [];
+	    }
+
+	    // Add the function to the event listener collection.
+	    this._all.push(fn);
+	    return this;
+	  };
+
+	  EventEmitter.prototype.addListener = EventEmitter.prototype.on;
+
+	  EventEmitter.prototype.off = function(type, listener) {
+	    if (typeof listener !== 'function') {
+	      throw new Error('removeListener only takes instances of Function');
+	    }
+
+	    var handlers,leafs=[];
+
+	    if(this.wildcard) {
+	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
+	      leafs = searchListenerTree.call(this, null, ns, this.listenerTree, 0);
+	    }
+	    else {
+	      // does not use listeners(), so no side effect of creating _events[type]
+	      if (!this._events[type]) return this;
+	      handlers = this._events[type];
+	      leafs.push({_listeners:handlers});
+	    }
+
+	    for (var iLeaf=0; iLeaf<leafs.length; iLeaf++) {
+	      var leaf = leafs[iLeaf];
+	      handlers = leaf._listeners;
+	      if (isArray(handlers)) {
+
+	        var position = -1;
+
+	        for (var i = 0, length = handlers.length; i < length; i++) {
+	          if (handlers[i] === listener ||
+	            (handlers[i].listener && handlers[i].listener === listener) ||
+	            (handlers[i]._origin && handlers[i]._origin === listener)) {
+	            position = i;
+	            break;
+	          }
+	        }
+
+	        if (position < 0) {
+	          continue;
+	        }
+
+	        if(this.wildcard) {
+	          leaf._listeners.splice(position, 1);
+	        }
+	        else {
+	          this._events[type].splice(position, 1);
+	        }
+
+	        if (handlers.length === 0) {
+	          if(this.wildcard) {
+	            delete leaf._listeners;
+	          }
+	          else {
+	            delete this._events[type];
+	          }
+	        }
+	        return this;
+	      }
+	      else if (handlers === listener ||
+	        (handlers.listener && handlers.listener === listener) ||
+	        (handlers._origin && handlers._origin === listener)) {
+	        if(this.wildcard) {
+	          delete leaf._listeners;
+	        }
+	        else {
+	          delete this._events[type];
+	        }
+	      }
+	    }
+
+	    return this;
+	  };
+
+	  EventEmitter.prototype.offAny = function(fn) {
+	    var i = 0, l = 0, fns;
+	    if (fn && this._all && this._all.length > 0) {
+	      fns = this._all;
+	      for(i = 0, l = fns.length; i < l; i++) {
+	        if(fn === fns[i]) {
+	          fns.splice(i, 1);
+	          return this;
+	        }
+	      }
+	    } else {
+	      this._all = [];
+	    }
+	    return this;
+	  };
+
+	  EventEmitter.prototype.removeListener = EventEmitter.prototype.off;
+
+	  EventEmitter.prototype.removeAllListeners = function(type) {
+	    if (arguments.length === 0) {
+	      !this._events || init.call(this);
+	      return this;
+	    }
+
+	    if(this.wildcard) {
+	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
+	      var leafs = searchListenerTree.call(this, null, ns, this.listenerTree, 0);
+
+	      for (var iLeaf=0; iLeaf<leafs.length; iLeaf++) {
+	        var leaf = leafs[iLeaf];
+	        leaf._listeners = null;
+	      }
+	    }
+	    else {
+	      if (!this._events[type]) return this;
+	      this._events[type] = null;
+	    }
+	    return this;
+	  };
+
+	  EventEmitter.prototype.listeners = function(type) {
+	    if(this.wildcard) {
+	      var handlers = [];
+	      var ns = typeof type === 'string' ? type.split(this.delimiter) : type.slice();
+	      searchListenerTree.call(this, handlers, ns, this.listenerTree, 0);
+	      return handlers;
+	    }
+
+	    this._events || init.call(this);
+
+	    if (!this._events[type]) this._events[type] = [];
+	    if (!isArray(this._events[type])) {
+	      this._events[type] = [this._events[type]];
+	    }
+	    return this._events[type];
+	  };
+
+	  EventEmitter.prototype.listenersAny = function() {
+
+	    if(this._all) {
+	      return this._all;
+	    }
+	    else {
+	      return [];
+	    }
+
+	  };
+
+	  if (true) {
+	     // AMD. Register as an anonymous module.
+	    !(__WEBPACK_AMD_DEFINE_RESULT__ = function() {
+	      return EventEmitter;
+	    }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	  } else if (typeof exports === 'object') {
+	    // CommonJS
+	    exports.EventEmitter2 = EventEmitter;
+	  }
+	  else {
+	    // Browser global.
+	    window.EventEmitter2 = EventEmitter;
+	  }
+	}();
+
+
+/***/ },
+/* 4 */,
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = {
+	  /**
+	   * Allows to communicate with an iframe.
+	   */
+	  ParentEndpoint:  __webpack_require__(6),
+	  /**
+	   * Allows to communicate with a parent page.
+	   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+	   */
+	  getIFrameEndpoint: __webpack_require__(8),
+	  structuredClone: __webpack_require__(7),
+
+	  // TODO: May be misnamed
+	  IframePhoneRpcEndpoint: __webpack_require__(9)
+
+	};
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var structuredClone = __webpack_require__(7);
+
+	/**
+	  Call as:
+	    new ParentEndpoint(targetWindow, targetOrigin, afterConnectedCallback)
+	      targetWindow is a WindowProxy object. (Messages will be sent to it)
+
+	      targetOrigin is the origin of the targetWindow. (Messages will be restricted to this origin)
+
+	      afterConnectedCallback is an optional callback function to be called when the connection is
+	        established.
+
+	  OR (less secure):
+	    new ParentEndpoint(targetIframe, afterConnectedCallback)
+
+	      targetIframe is a DOM object (HTMLIframeElement); messages will be sent to its contentWindow.
+
+	      afterConnectedCallback is an optional callback function
+
+	    In this latter case, targetOrigin will be inferred from the value of the src attribute of the
+	    provided DOM object at the time of the constructor invocation. This is less secure because the
+	    iframe might have been navigated to an unexpected domain before constructor invocation.
+
+	  Note that it is important to specify the expected origin of the iframe's content to safeguard
+	  against sending messages to an unexpected domain. This might happen if our iframe is navigated to
+	  a third-party URL unexpectedly. Furthermore, having a reference to Window object (as in the first
+	  form of the constructor) does not protect against sending a message to the wrong domain. The
+	  window object is actualy a WindowProxy which transparently proxies the Window object of the
+	  underlying iframe, so that when the iframe is navigated, the "same" WindowProxy now references a
+	  completely differeent Window object, possibly controlled by a hostile domain.
+
+	  See http://www.esdiscuss.org/topic/a-dom-use-case-that-can-t-be-emulated-with-direct-proxies for
+	  more about this weird behavior of WindowProxies (the type returned by <iframe>.contentWindow).
+	*/
+
+	module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, afterConnectedCallback) {
+	  var selfOrigin = window.location.href.match(/(.*?\/\/.*?)\//)[1];
+	  var postMessageQueue = [];
+	  var connected = false;
+	  var handlers = {};
+	  var targetWindowIsIframeElement;
+
+	  function getOrigin(iframe) {
+	    return iframe.src.match(/(.*?\/\/.*?)\//)[1];
+	  }
+
+	  function post(type, content) {
+	    var message;
+	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+	    // as the first argument.
+	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+	      message = type;
+	    } else {
+	      message = {
+	        type: type,
+	        content: content
+	      };
+	    }
+	    if (connected) {
+	      var tWindow = getTargetWindow();
+	      // if we are laready connected ... send the message
+	      message.origin = selfOrigin;
+	      // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+	      //     https://github.com/Modernizr/Modernizr/issues/388
+	      //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+	      if (structuredClone.supported()) {
+	        tWindow.postMessage(message, targetOrigin);
+	      } else {
+	        tWindow.postMessage(JSON.stringify(message), targetOrigin);
+	      }
+	    } else {
+	      // else queue up the messages to send after connection complete.
+	      postMessageQueue.push(message);
+	    }
+	  }
+
+	  function addListener(messageName, func) {
+	    handlers[messageName] = func;
+	  }
+
+	  function removeListener(messageName) {
+	    handlers[messageName] = null;
+	  }
+
+	  // Note that this function can't be used when IFrame element hasn't been added to DOM yet
+	  // (.contentWindow would be null). At the moment risk is purely theoretical, as the parent endpoint
+	  // only listens for an incoming 'hello' message and the first time we call this function
+	  // is in #receiveMessage handler (so iframe had to be initialized before, as it could send 'hello').
+	  // It would become important when we decide to refactor the way how communication is initialized.
+	  function getTargetWindow() {
+	    if (targetWindowIsIframeElement) {
+	      var tWindow = targetWindowOrIframeEl.contentWindow;
+	      if (!tWindow) {
+	        throw "IFrame element needs to be added to DOM before communication " +
+	              "can be started (.contentWindow is not available)";
+	      }
+	      return tWindow;
+	    }
+	    return targetWindowOrIframeEl;
+	  }
+
+	  function receiveMessage(message) {
+	    var messageData;
+	    if (message.source === getTargetWindow() && message.origin === targetOrigin) {
+	      messageData = message.data;
+	      if (typeof messageData === 'string') {
+	        messageData = JSON.parse(messageData);
+	      }
+	      if (handlers[messageData.type]) {
+	        handlers[messageData.type](messageData.content);
+	      } else {
+	        console.log("cant handle type: " + messageData.type);
+	      }
+	    }
+	  }
+
+	  function disconnect() {
+	    connected = false;
+	    window.removeEventListener('message', receiveMessage);
+	  }
+
+	  // handle the case that targetWindowOrIframeEl is actually an <iframe> rather than a Window(Proxy) object
+	  // Note that if it *is* a WindowProxy, this probe will throw a SecurityException, but in that case
+	  // we also don't need to do anything
+	  try {
+	    targetWindowIsIframeElement = targetWindowOrIframeEl.constructor === HTMLIFrameElement;
+	  } catch (e) {
+	    targetWindowIsIframeElement = false;
+	  }
+
+	  if (targetWindowIsIframeElement) {
+	    // Infer the origin ONLY if the user did not supply an explicit origin, i.e., if the second
+	    // argument is empty or is actually a callback (meaning it is supposed to be the
+	    // afterConnectionCallback)
+	    if (!targetOrigin || targetOrigin.constructor === Function) {
+	      afterConnectedCallback = targetOrigin;
+	      targetOrigin = getOrigin(targetWindowOrIframeEl);
+	    }
+	  }
+
+	  // when we receive 'hello':
+	  addListener('hello', function() {
+	    connected = true;
+
+	    // send hello response
+	    post('hello');
+
+	    // give the user a chance to do things now that we are connected
+	    // note that is will happen before any queued messages
+	    if (afterConnectedCallback && typeof afterConnectedCallback === "function") {
+	      afterConnectedCallback();
+	    }
+
+	    // Now send any messages that have been queued up ...
+	    while(postMessageQueue.length > 0) {
+	      post(postMessageQueue.shift());
+	    }
+	  });
+
+	  window.addEventListener('message', receiveMessage, false);
+
+	  // Public API.
+	  return {
+	    post: post,
+	    addListener: addListener,
+	    removeListener: removeListener,
+	    disconnect: disconnect,
+	    getTargetWindow: getTargetWindow,
+	    targetOrigin: targetOrigin
+	  };
+	};
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	var featureSupported = false;
+
+	(function () {
+	  var result = 0;
+
+	  if (!!window.postMessage) {
+	    try {
+	      // Safari 5.1 will sometimes throw an exception and sometimes won't, lolwut?
+	      // When it doesn't we capture the message event and check the
+	      // internal [[Class]] property of the message being passed through.
+	      // Safari will pass through DOM nodes as Null iOS safari on the other hand
+	      // passes it through as DOMWindow, gotcha.
+	      window.onmessage = function(e){
+	        var type = Object.prototype.toString.call(e.data);
+	        result = (type.indexOf("Null") != -1 || type.indexOf("DOMWindow") != -1) ? 1 : 0;
+	        featureSupported = {
+	          'structuredClones': result
+	        };
+	      };
+	      // Spec states you can't transmit DOM nodes and it will throw an error
+	      // postMessage implimentations that support cloned data will throw.
+	      window.postMessage(document.createElement("a"),"*");
+	    } catch(e) {
+	      // BBOS6 throws but doesn't pass through the correct exception
+	      // so check error message
+	      result = (e.DATA_CLONE_ERR || e.message == "Cannot post cyclic structures.") ? 1 : 0;
+	      featureSupported = {
+	        'structuredClones': result
+	      };
+	    }
+	  }
+	}());
+
+	exports.supported = function supported() {
+	  return featureSupported && featureSupported.structuredClones > 0;
+	};
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var structuredClone = __webpack_require__(7);
+	var HELLO_INTERVAL_LENGTH = 200;
+	var HELLO_TIMEOUT_LENGTH = 60000;
+
+	function IFrameEndpoint() {
+	  var parentOrigin;
+	  var listeners = {};
+	  var isInitialized = false;
+	  var connected = false;
+	  var postMessageQueue = [];
+	  var helloInterval;
+
+	  function postToTarget(message, target) {
+	    // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
+	    //     https://github.com/Modernizr/Modernizr/issues/388
+	    //     http://jsfiddle.net/ryanseddon/uZTgD/2/
+	    if (structuredClone.supported()) {
+	      window.parent.postMessage(message, target);
+	    } else {
+	      window.parent.postMessage(JSON.stringify(message), target);
+	    }
+	  }
+
+	  function post(type, content) {
+	    var message;
+	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
+	    // as the first argument.
+	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
+	      message = type;
+	    } else {
+	      message = {
+	        type: type,
+	        content: content
+	      };
+	    }
+	    if (connected) {
+	      postToTarget(message, parentOrigin);
+	    } else {
+	      postMessageQueue.push(message);
+	    }
+	  }
+
+	  // Only the initial 'hello' message goes permissively to a '*' target (because due to cross origin
+	  // restrictions we can't find out our parent's origin until they voluntarily send us a message
+	  // with it.)
+	  function postHello() {
+	    postToTarget({
+	      type: 'hello',
+	      origin: document.location.href.match(/(.*?\/\/.*?)\//)[1]
+	    }, '*');
+	  }
+
+	  function addListener(type, fn) {
+	    listeners[type] = fn;
+	  }
+
+	  function removeAllListeners() {
+	    listeners = {};
+	  }
+
+	  function getListenerNames() {
+	    return Object.keys(listeners);
+	  }
+
+	  function messageListener(message) {
+	      // Anyone can send us a message. Only pay attention to messages from parent.
+	      if (message.source !== window.parent) return;
+
+	      var messageData = message.data;
+
+	      if (typeof messageData === 'string') messageData = JSON.parse(messageData);
+
+	      // We don't know origin property of parent window until it tells us.
+	      if (!connected && messageData.type === 'hello') {
+	        // This is the return handshake from the embedding window.
+	        parentOrigin = messageData.origin;
+	        connected = true;
+	        stopPostingHello();
+	        while(postMessageQueue.length > 0) {
+	          post(postMessageQueue.shift());
+	        }
+	      }
+
+	      // Perhaps-redundantly insist on checking origin as well as source window of message.
+	      if (message.origin === parentOrigin) {
+	        if (listeners[messageData.type]) listeners[messageData.type](messageData.content);
+	      }
+	   }
+
+	   function disconnect() {
+	     connected = false;
+	     stopPostingHello();
+	     window.removeEventListener('message', messsageListener);
+	   }
+
+	  /**
+	    Initialize communication with the parent frame. This should not be called until the app's custom
+	    listeners are registered (via our 'addListener' public method) because, once we open the
+	    communication, the parent window may send any messages it may have queued. Messages for which
+	    we don't have handlers will be silently ignored.
+	  */
+	  function initialize() {
+	    if (isInitialized) {
+	      return;
+	    }
+	    isInitialized = true;
+	    if (window.parent === window) return;
+
+	    // We kick off communication with the parent window by sending a "hello" message. Then we wait
+	    // for a handshake (another "hello" message) from the parent window.
+	    postHello();
+	    startPostingHello();
+	    window.addEventListener('message', messageListener, false);
+	  }
+
+	  function startPostingHello() {
+	    if (helloInterval) {
+	      stopPostingHello();
+	    }
+	    helloInterval = window.setInterval(postHello, HELLO_INTERVAL_LENGTH);
+	    window.setTimeout(stopPostingHello, HELLO_TIMEOUT_LENGTH);
+	  }
+
+	  function stopPostingHello() {
+	    window.clearInterval(helloInterval);
+	    helloInterval = null;
+	  }
+
+	  // Public API.
+	  return {
+	    initialize        : initialize,
+	    getListenerNames  : getListenerNames,
+	    addListener       : addListener,
+	    removeAllListeners: removeAllListeners,
+	    disconnect        : disconnect,
+	    post              : post
+	  };
+	}
+
+	var instance = null;
+
+	// IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
+	module.exports = function getIFrameEndpoint() {
+	  if (!instance) {
+	    instance = new IFrameEndpoint();
+	  }
+	  return instance;
+	};
+
+/***/ },
 /* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var ParentEndpoint = __webpack_require__(6);
+	var getIFrameEndpoint = __webpack_require__(8);
+
+	// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
+	// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
+	function getPseudoUUID() {
+	    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+	    var len = chars.length;
+	    var ret = [];
+
+	    for (var i = 0; i < 10; i++) {
+	        ret.push(chars[Math.floor(Math.random() * len)]);
+	    }
+	    return ret.join('');
+	}
+
+	module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindow, targetOrigin, phone) {
+	    var pendingCallbacks = Object.create({});
+
+	    // if it's a non-null object, rather than a function, 'handler' is really an options object
+	    if (handler && typeof handler === 'object') {
+	        namespace = handler.namespace;
+	        targetWindow = handler.targetWindow;
+	        targetOrigin = handler.targetOrigin;
+	        phone = handler.phone;
+	        handler = handler.handler;
+	    }
+
+	    if ( ! phone ) {
+	        if (targetWindow === window.parent) {
+	            phone = getIFrameEndpoint();
+	            phone.initialize();
+	        } else {
+	            phone = new ParentEndpoint(targetWindow, targetOrigin);
+	        }
+	    }
+
+	    phone.addListener(namespace, function(message) {
+	        var callbackObj;
+
+	        if (message.messageType === 'call' && typeof this.handler === 'function') {
+	            this.handler.call(undefined, message.value, function(returnValue) {
+	                phone.post(namespace, {
+	                    messageType: 'returnValue',
+	                    uuid: message.uuid,
+	                    value: returnValue
+	                });
+	            });
+	        } else if (message.messageType === 'returnValue') {
+	            callbackObj = pendingCallbacks[message.uuid];
+
+	            if (callbackObj) {
+	                window.clearTimeout(callbackObj.timeout);
+	                if (callbackObj.callback) {
+	                    callbackObj.callback.call(undefined, message.value);
+	                }
+	                pendingCallbacks[message.uuid] = null;
+	            }
+	        }
+	    }.bind(this));
+
+	    function call(message, callback) {
+	        var uuid = getPseudoUUID();
+
+	        pendingCallbacks[uuid] = {
+	            callback: callback,
+	            timeout: window.setTimeout(function() {
+	                if (callback) {
+	                    callback(undefined, new Error("IframePhone timed out waiting for reply"));
+	                }
+	            }, 2000)
+	        };
+
+	        phone.post(namespace, {
+	            messageType: 'call',
+	            uuid: uuid,
+	            value: message
+	        });
+	    }
+
+	    function disconnect() {
+	        phone.disconnect();
+	    }
+
+	    this.handler = handler;
+	    this.call = call.bind(this);
+	    this.disconnect = disconnect.bind(this);
+	};
+
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10630,7 +10369,755 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	var _eventemitter = __webpack_require__(3);
+
+	var _eventemitter2 = _interopRequireDefault(_eventemitter);
+
+	var _utils = __webpack_require__(11);
+
+	var _physics = __webpack_require__(12);
+
+	var _engine = __webpack_require__(14);
+
+	var engine = _interopRequireWildcard(_engine);
+
+	var _view = __webpack_require__(15);
+
+	var _view2 = _interopRequireDefault(_view);
+
+	var _presets = __webpack_require__(26);
+
+	var _presets2 = _interopRequireDefault(_presets);
+
+	var _constants = __webpack_require__(13);
+
+	var _analyzeHabitability2 = __webpack_require__(27);
+
+	var _analyzeHabitability3 = _interopRequireDefault(_analyzeHabitability2);
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
+
+	var DEF_STATE = {
+	  time: 0, // [ year ]
+	  timestep: 0.001, // [ year ]
+	  star: {
+	    x: 'output', // [ AU ]           - depends on planet position
+	    y: 'output', // [ AU ]
+	    vx: 'output', // [ AU / year ]    - depends on planet velocity
+	    vy: 'output', // [ AU / year ]
+	    mass: _constants.SOLAR_MASS, // [ earth masses ]
+	    scale: 1,
+	    color: 0xFFFF00,
+	    type: 'G'
+	  },
+	  habitationZone: {
+	    visible: false,
+	    innerRadius: 0.95, // [ AU ]
+	    outerRadius: 1.37 // [ AU ]
+	  },
+	  planet: {
+	    x: 1, // [ AU ]
+	    y: 0, // [ AU ]
+	    vx: 'fakeValue', // [ AU / year ]      - velocity will be calculated dynamically later!
+	    vy: 'fakeValue', // [ AU / year ]        See #setCircularVelocity call below.
+	    diameter: 1, // [ earth diameter ] - diameter multiplier, 1 => earth diameter
+	    rocky: true
+	  },
+	  camera: {
+	    tiltLocked: false,
+	    tilt: 90, // [ deg ], between 0 and 90
+	    distance: 10, // [ AU ]
+	    zoom: 1
+	  },
+	  telescope: {
+	    precision: 100, // [0..100], affects starCamVelocity and lightIntensity
+	    starCamVelocity: 'output', // [ AU / year ]
+	    lightIntensity: 'output' // [0..1], 1 is default intensity without occultation
+	  }
+	};
+	// Velocity will be set in such a way so that its orbit is circular.
+	(0, _physics.makeCircularOrbit)(DEF_STATE.planet, DEF_STATE.star);
+
+	var _class = (function () {
+	  function _class(parentEl) {
+	    var _this = this;
+
+	    _classCallCheck(this, _class);
+
+	    this.state = (0, _utils.deepExtend)({}, DEF_STATE);
+	    engine.calculateOutputs(this.state);
+
+	    this.view = new _view2.default(parentEl);
+	    this.view.on('camera.change', function (cameraState) {
+	      _this.setState({ camera: cameraState });
+	    });
+	    this.view.on('planet.change', function (planetState) {
+	      _this.setState({ planet: planetState });
+	    });
+
+	    this.tick = 0;
+	    this.isPlaying = false;
+
+	    this.dispatch = new _eventemitter2.default();
+
+	    this._setupBreadCrumbs();
+
+	    this._rafCallback = this._rafCallback.bind(this);
+	    this._rafCallback();
+	  }
+
+	  _createClass(_class, [{
+	    key: 'on',
+	    value: function on() {
+	      // Delegate #on to EventEmitter object.
+	      this.dispatch.on.apply(this.dispatch, arguments);
+	    }
+	  }, {
+	    key: 'play',
+	    value: function play() {
+	      this.isPlaying = true;
+	      this.dispatch.emit('play');
+	    }
+	  }, {
+	    key: 'stop',
+	    value: function stop() {
+	      this.isPlaying = false;
+	      this.dispatch.emit('stop');
+	    }
+	  }, {
+	    key: 'loadPreset',
+	    value: function loadPreset(name) {
+	      this.setState(_presets2.default[name]);
+	    }
+	  }, {
+	    key: 'analyzeHabitability',
+	    value: function analyzeHabitability() {
+	      return (0, _analyzeHabitability3.default)(this.state.star, this.state.planet, this.state.habitationZone);
+	    }
+	  }, {
+	    key: 'resize',
+	    value: function resize() {
+	      this.view.resize();
+	    }
+	  }, {
+	    key: 'setState',
+	    value: function setState(newState) {
+	      (0, _utils.deepExtend)(this.state, newState);
+	      this._emitStateChange();
+	    }
+	  }, {
+	    key: 'makeCircularOrbit',
+	    value: function makeCircularOrbit() {
+	      (0, _physics.makeCircularOrbit)(this.state.planet, this.state.star);
+	      this._emitStateChange();
+	    }
+	  }, {
+	    key: '_rafCallback',
+	    value: function _rafCallback() {
+	      if (this.isPlaying) {
+	        engine.tick(this.state);
+	        this.tick += 1;
+	        this.dispatch.emit('tick', this.state);
+	      }
+	      // User can interact with the model only when it's paused.
+	      this.view.interactionEnabled = !this.isPlaying;
+	      this.view.setProps(this.state);
+	      this.view.render();
+	      this._rafID = requestAnimationFrame(this._rafCallback);
+	    }
+	  }, {
+	    key: '_setupBreadCrumbs',
+	    value: function _setupBreadCrumbs() {
+	      var _this2 = this;
+
+	      this.on('state.change', function (newState) {
+	        if (newState.planet.diameter === 0) _this2.view.clearBreadCrumbs();
+	      });
+	      this.on('tick', function (newState) {
+	        if (_this2.tick % BREAD_CRUMBS_INTERVAL === 0 && newState.planet.diameter > 0) {
+	          // Don't add bread crumbs when diameter === 0 what means that there is no planet.
+	          _this2.view.addBreadCrumb(newState.planet.x, newState.planet.y);
+	        }
+	      });
+	    }
+	  }, {
+	    key: '_emitStateChange',
+	    value: function _emitStateChange() {
+	      this.dispatch.emit('state.change', this.state);
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.extend = extend;
+	exports.deepExtend = deepExtend;
+
+	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+
+	// Simplified jQuery.extend, based on from:
+	// https://github.com/jquery/jquery/blob/22449eb968622c2e14d6c8d8de2cf1e1ba4adccd/src/core.js#L118-L185
+	function extend() {
+	  var options,
+	      name,
+	      src,
+	      copy,
+	      copyIsArray,
+	      clone,
+	      target = arguments[0] || {},
+	      i = 1,
+	      length = arguments.length,
+	      deep = false;
+	  // Handle a deep copy situation
+	  if (typeof target === "boolean") {
+	    deep = target;
+	    // Skip the boolean and the target
+	    target = arguments[i] || {};
+	    i++;
+	  }
+	  // Handle case when target is a string or something (possible in deep copy)
+	  if ((typeof target === "undefined" ? "undefined" : _typeof(target)) !== "object") {
+	    target = {};
+	  }
+	  for (; i < length; i++) {
+	    // Only deal with non-null/undefined values
+	    if ((options = arguments[i]) != null) {
+	      // Extend the base object
+	      for (name in options) {
+	        src = target[name];
+	        copy = options[name];
+	        // Prevent never-ending loop
+	        if (target === copy) {
+	          continue;
+	        }
+	        // Recurse if we're merging plain objects or arrays
+	        if (deep && copy && (isPlainObject(copy) || (copyIsArray = Array.isArray(copy)))) {
+	          if (copyIsArray) {
+	            copyIsArray = false;
+	            clone = src && Array.isArray(src) ? src : [];
+	          } else {
+	            clone = src && isPlainObject(src) ? src : {};
+	          }
+	          // Never move original objects, clone them
+	          target[name] = extend(deep, clone, copy);
+	          // Don't bring in undefined values
+	        } else if (copy !== undefined) {
+	            target[name] = copy;
+	          }
+	      }
+	    }
+	  }
+	  // Return the modified object
+	  return target;
+	}
+
+	// Same as extend, but passing true as a first parameter.
+	function deepExtend() {
+	  var args = Array.prototype.slice.call(arguments);
+	  args.unshift(true);
+	  return extend.apply(null, args);
+	}
+
+	function isPlainObject(obj) {
+	  return (typeof obj === "undefined" ? "undefined" : _typeof(obj)) === "object";
+	}
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.updatePlanet = updatePlanet;
+	exports.updateStar = updateStar;
+	exports.updateTelescope = updateTelescope;
+	exports.makeCircularOrbit = makeCircularOrbit;
+	exports.starCamVelocity = starCamVelocity;
+	exports.lightIntensity = lightIntensity;
+	exports.occultation = occultation;
+	exports.planetMass = planetMass;
+
+	var _constants = __webpack_require__(13);
+
+	var DEG_2_RAD = Math.PI / 180;
+	// The universal gravitational constant in AU, years, and earth-mass units.
+	var G = 0 - 2 * 5.922e-5;
+	// The relative density compared to Earth.
+	var ROCKY_PLANET_DENSITY = 1;
+	// The relative density of Jupiter compared to Earth.
+	var GAS_PLANET_DENSITY = 1 / 4.13;
+
+	var ERR_MSG = 'The model has diverged. Decrease timestep or velocity of the planet.';
+
+	function updatePlanet(star, planet, timestep) {
+	  leapFrog(star, planet, timestep);
+	  if (isNaN(planet.x + planet.y + planet.vx + planet.vy)) {
+	    alert(ERR_MSG);
+	    throw new Error(ERR_MSG);
+	  }
+	}
+
+	function updateStar(star, planet) {
+	  var rho = -planetMass(planet) / star.mass;
+	  star.x = rho * planet.x;
+	  star.y = rho * planet.y;
+	  star.vx = rho * planet.vx;
+	  star.vy = rho * planet.vy;
+	}
+
+	function updateTelescope(telescope, star, planet, camera, timestep) {
+	  telescope.starCamVelocity = starCamVelocity(star, camera, timestep);
+	  telescope.lightIntensity = lightIntensity(star, planet, camera);
+
+	  if (telescope.precision < 100) {
+	    // Add random noise.
+	    telescope.starCamVelocity += 0.15 * (Math.random() * 2 - 1) / telescope.precision;
+	    telescope.lightIntensity += 0.3 * -Math.random() / telescope.precision;
+	  }
+	}
+
+	function makeCircularOrbit(planet, star) {
+	  var p = planet;
+	  var a = Math.atan2(p.x, p.y);
+	  var d = Math.sqrt(p.x * p.x + p.y * p.y);
+	  var v = 2 * Math.PI / Math.sqrt(d) * Math.sqrt(star.mass / _constants.SOLAR_MASS);
+	  p.vx = -v * Math.cos(a);
+	  p.vy = v * Math.sin(a);
+	}
+
+	function starCamVelocity(star, camera, timestep) {
+	  if (camera.tilt === 90) {
+	    // Special case, we don't want any numerical errors here even for large timestep.
+	    return 0;
+	  }
+	  var cameraX = 0;
+	  var cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
+	  var cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
+	  var newStarX = star.x + star.vx * timestep;
+	  var newStarY = star.y + star.vy * timestep;
+	  var oldDist = dist(star.x, star.y, 0, cameraX, cameraY, cameraZ);
+	  var newDist = dist(newStarX, newStarY, 0, cameraX, cameraY, cameraZ);
+	  return (newDist - oldDist) / timestep;
+	}
+
+	function lightIntensity(star, planet, camera) {
+	  if (occultation(star, planet, camera)) {
+	    return 1 - Math.pow(planet.diameter / 100, 2);
+	  }
+	  return 1;
+	}
+
+	function occultation(star, planet, camera) {
+	  if (Math.abs(camera.tilt) > 0.1) {
+	    return false;
+	  }
+	  if (camera.distance < distObj(planet, { x: 0, y: 0 })) {
+	    // Planet is behind the camera.
+	    return false;
+	  }
+	  if (planet.y > 0) {
+	    // Planet is behind the star.
+	    return false;
+	  }
+	  // This assumes that camera position is limited to XZ plane (so Y is always == 0)
+	  // and it always looks at (0, 0, 0) point.
+	  return Math.abs(star.x - planet.x) < _constants.PLANET_RADIUS + _constants.STAR_RADIUS;
+	}
+
+	function planetMass(planet) {
+	  var density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
+	  return density * Math.pow(planet.diameter, 3);
+	}
+
+	function dist(x1, y1, z1, x2, y2, z2) {
+	  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
+	}
+
+	function distObj(a, b) {
+	  // Planet and star objects don't specify Z coord, as it's always equal to 0.
+	  return dist(a.x, a.y, a.z || 0, b.x, b.y, b.z || 0);
+	}
+
+	function euler(s, p, dt) {
+	  p.x += p.vx * dt * 0.5;
+	  p.y += p.vy * dt * 0.5;
+	  var factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
+	  var ax = p.x * factor;
+	  var ay = p.y * factor;
+	  p.vx += ax * dt;
+	  p.vy += ay * dt;
+	  p.x += p.vx * dt * 0.5;
+	  p.y += p.vy * dt * 0.5;
+	}
+
+	function leapFrog(s, p, dt) {
+	  var factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
+	  var a1x = p.x * factor;
+	  var a1y = p.y * factor;
+	  p.x += p.vx * dt + 0.5 * a1x * dt * dt;
+	  p.y += p.vy * dt + 0.5 * a1y * dt * dt;
+	  factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
+	  var a2x = p.x * factor;
+	  var a2y = p.y * factor;
+	  p.vx += 0.5 * (a1x + a2x) * dt;
+	  p.vy += 0.5 * (a1y + a2y) * dt;
+	}
+
+/***/ },
+/* 13 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var SF = exports.SF = 1000; // scale factor, conversion between model unit [AU] and view unit
+
+	var STAR_RADIUS = exports.STAR_RADIUS = 0.16; // [ AU ]
+	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05; // [ AU ]
+
+	var SOLAR_MASS_KG = 1.99e30; // [ kg ]
+	var EARTH_MASS_KG = 5.97e24; // [ kg ]
+	var SOLAR_MASS = exports.SOLAR_MASS = SOLAR_MASS_KG / EARTH_MASS_KG; // [ earth masses ]
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.tick = tick;
+	exports.calculateOutputs = calculateOutputs;
+
+	var _utils = __webpack_require__(11);
+
+	var _physics = __webpack_require__(12);
+
+	var MAX_TIMESTEP = 0.005;
+
+	function tick(state) {
+	  // Make sure that integration isn't using too big timestep, so it's still reasonably accurate.
+	  var dt = Math.min(MAX_TIMESTEP, state.timestep);
+	  var steps = Math.round(state.timestep / dt);
+	  for (var i = 0; i < steps; i++) {
+	    (0, _physics.updatePlanet)(state.star, state.planet, dt);
+	    state.time += dt;
+	  }
+	  calculateOutputs(state);
+	}
+
+	function calculateOutputs(state) {
+	  // Note that star position and velocity depends strictly on planet, so it's an output in fact.
+	  (0, _physics.updateStar)(state.star, state.planet);
+	  (0, _physics.updateTelescope)(state.telescope, state.star, state.planet, state.camera, state.timestep);
+	}
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _jquery = __webpack_require__(2);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
+	var _eventemitter = __webpack_require__(3);
+
+	var _eventemitter2 = _interopRequireDefault(_eventemitter);
+
+	var _star = __webpack_require__(16);
+
+	var _star2 = _interopRequireDefault(_star);
+
+	var _planet = __webpack_require__(17);
+
+	var _planet2 = _interopRequireDefault(_planet);
+
+	var _grid = __webpack_require__(19);
+
+	var _grid2 = _interopRequireDefault(_grid);
+
+	var _breadCrumbs = __webpack_require__(22);
+
+	var _breadCrumbs2 = _interopRequireDefault(_breadCrumbs);
+
+	var _habitationZone = __webpack_require__(23);
+
+	var _habitationZone2 = _interopRequireDefault(_habitationZone);
+
+	var _camera = __webpack_require__(24);
+
+	var _camera2 = _interopRequireDefault(_camera);
+
+	var _interactionsManager = __webpack_require__(25);
+
+	var _interactionsManager2 = _interopRequireDefault(_interactionsManager);
+
+	var _constants = __webpack_require__(13);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	// Let user know that he can change the tilt.
+	var TILT_CURSOR = 'ns-resize';
+
+	var _class = (function () {
+	  function _class(parentEl) {
+	    var _this = this;
+
+	    _classCallCheck(this, _class);
+
+	    this.renderer = webglAvailable() ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
+	    this.renderer.setPixelRatio(window.devicePixelRatio);
+	    parentEl.appendChild(this.renderer.domElement);
+
+	    this._addHTMLDisplay(parentEl);
+
+	    this.camera = new _camera2.default(this.renderer.domElement);
+	    this.camera.onChange(function () {
+	      _this.dispatch.emit('camera.change', _this.camera.getProps());
+	    });
+
+	    this.dispatch = new _eventemitter2.default();
+
+	    this.scene = new THREE.Scene();
+	    this._initScene();
+
+	    this.interactionEnabled = true;
+	    this.interactionsManager = new _interactionsManager2.default(this.renderer.domElement, this.camera);
+	    this._initInteractions();
+
+	    this.resize();
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setProps',
+	    value: function setProps(props) {
+	      this.star.setProps(props.star);
+	      this.habitationZone.setProps(props.habitationZone);
+	      this.planet.setProps(props.planet);
+	      this.camera.setProps(props.camera);
+
+	      this._setupZoomLevel(props.camera.zoom);
+
+	      this._showTilt(props.camera.tiltLocked ? false : props.camera.tilt.toFixed(2));
+	    }
+	  }, {
+	    key: 'addBreadCrumb',
+	    value: function addBreadCrumb(x, y) {
+	      this.breadCrumbs.addBreadCrumb(x, y);
+	    }
+	  }, {
+	    key: 'clearBreadCrumbs',
+	    value: function clearBreadCrumbs() {
+	      this.breadCrumbs.clear();
+	    }
+
+	    // Delegate #on to EventEmitter object.
+
+	  }, {
+	    key: 'on',
+	    value: function on() {
+	      this.dispatch.on.apply(this.dispatch, arguments);
+	    }
+	  }, {
+	    key: 'render',
+	    value: function render() {
+	      this.camera.update();
+	      this.renderer.render(this.scene, this.camera.camera);
+	      if (this.interactionEnabled) {
+	        this.interactionsManager.checkInteraction();
+	      }
+	    }
+
+	    // Resizes canvas to fill its parent.
+
+	  }, {
+	    key: 'resize',
+	    value: function resize() {
+	      var parent = this.renderer.domElement.parentElement;
+	      var newWidth = parent.clientWidth;
+	      var newHeight = parent.clientHeight;
+	      this.renderer.setSize(newWidth, newHeight);
+	      this.camera.setSize(newWidth, newHeight);
+	      this.$display.css('font-size', newHeight / 26 + 'px');
+	    }
+	  }, {
+	    key: '_addHTMLDisplay',
+	    value: function _addHTMLDisplay(parentEl) {
+	      this.$display = (0, _jquery2.default)('<div class="display">The tilt is <span class="tilt-val"></span> degrees</div>');
+	      this.$display.css({
+	        position: 'absolute',
+	        bottom: '5px',
+	        right: '5px',
+	        color: '#fff',
+	        fontFamily: 'Arial',
+	        pointerEvents: 'none'
+	      });
+	      this.$display.appendTo(parentEl);
+	      this.$tiltVal = this.$display.find('.tilt-val');
+	      this.$tiltVal.css({
+	        fontWeight: 'bold'
+	      });
+	    }
+	  }, {
+	    key: '_setCursor',
+	    value: function _setCursor(cursor) {
+	      this.renderer.domElement.style.cursor = cursor || this._mainCursor;
+	    }
+
+	    // If 'tilt' is a number, it shows it at the bottom of the screen.
+	    // If it's false, it hides the display.
+
+	  }, {
+	    key: '_showTilt',
+	    value: function _showTilt(tilt) {
+	      if (!this._tilt && tilt) {
+	        this.$display.show();
+	        this._mainCursor = TILT_CURSOR;
+	        this._setCursor();
+	      } else if (this._tilt && !tilt) {
+	        this.$display.hide();
+	        this._mainCursor = '';
+	        this._setCursor();
+	      }
+	      if (this._tilt !== tilt) {
+	        this.$tiltVal.text(tilt);
+	        this._tilt = tilt;
+	      }
+	    }
+
+	    // Updates grid size and makes certain objects bigger so they are still visible.
+
+	  }, {
+	    key: '_setupZoomLevel',
+	    value: function _setupZoomLevel(zoom) {
+	      var gridSize = gridSizeForZoom(zoom);
+	      this.grid.size = gridSize;
+	    }
+	  }, {
+	    key: '_initScene',
+	    value: function _initScene() {
+	      this.grid = new _grid2.default();
+	      this.star = new _star2.default();
+	      this.habitationZone = new _habitationZone2.default();
+	      this.planet = new _planet2.default();
+	      this.breadCrumbs = new _breadCrumbs2.default();
+	      this.scene.add(this.grid.rootObject);
+	      this.scene.add(this.star.rootObject);
+	      this.scene.add(this.habitationZone.rootObject);
+	      this.scene.add(this.planet.rootObject);
+	      this.scene.add(this.breadCrumbs.rootObject);
+	      this.scene.add(new THREE.AmbientLight(0x202020));
+	    }
+	  }, {
+	    key: '_initInteractions',
+	    value: function _initInteractions() {
+	      var _this2 = this;
+
+	      // Earth dragging.
+	      this.interactionsManager.registerInteraction({
+	        test: function test() {
+	          return _this2.interactionsManager.isUserPointing(_this2.planet.mesh);
+	        },
+	        activationChangeHandler: function activationChangeHandler(isActive) {
+	          _this2.planet.setHighlighted(isActive);
+	          _this2._setCursor(isActive ? 'move' : null);
+	        },
+	        stepHandler: function stepHandler() {
+	          var coords = _this2.interactionsManager.pointerToXYPlane();
+	          _this2.dispatch.emit('planet.change', { x: coords.x / _constants.SF, y: coords.y / _constants.SF });
+	        }
+	      });
+	      // Velocity arrow(head) dragging.
+	      this.interactionsManager.registerInteraction({
+	        test: function test() {
+	          return _this2.interactionsManager.isUserPointing(_this2.planet.velocityArrow.headMesh);
+	        },
+	        activationChangeHandler: function activationChangeHandler(isActive) {
+	          _this2.planet.velocityArrow.setHighlighted(isActive);
+	          _this2._setCursor(isActive ? 'move' : null);
+	        },
+	        stepHandler: function stepHandler() {
+	          var coords = _this2.interactionsManager.pointerToXYPlane();
+	          // Calculate coordinates of new velocity vector in view units.
+	          var vx = coords.x - _this2.planet.position.x;
+	          var vy = coords.y - _this2.planet.position.y;
+	          _this2.dispatch.emit('planet.change', _this2.planet.velocityViewUnit2AU(vx, vy));
+	        }
+	      });
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+	function gridSizeForZoom(zoom) {
+	  if (zoom >= 2) {
+	    return 1;
+	  }
+	  if (zoom >= 0.5) {
+	    return 2;
+	  }
+	  return 5;
+	}
+
+	function webglAvailable() {
+	  try {
+	    var canvas = document.createElement('canvas');
+	    return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+	  } catch (e) {
+	    return false;
+	  }
+	}
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _constants = __webpack_require__(13);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10684,7 +11171,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 10 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10695,9 +11182,9 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
 
-	var _velocityArrow = __webpack_require__(11);
+	var _velocityArrow = __webpack_require__(18);
 
 	var _velocityArrow2 = _interopRequireDefault(_velocityArrow);
 
@@ -10773,7 +11260,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 11 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10785,7 +11272,7 @@
 	});
 	exports.VELOCITY_LEN_SCALE = undefined;
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -10851,7 +11338,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 12 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10862,9 +11349,9 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
 
-	var _axis = __webpack_require__(13);
+	var _axis = __webpack_require__(20);
 
 	var _axis2 = _interopRequireDefault(_axis);
 
@@ -10932,7 +11419,7 @@
 	}
 
 /***/ },
-/* 13 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10943,9 +11430,9 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
 
-	var _label = __webpack_require__(14);
+	var _label = __webpack_require__(21);
 
 	var _label2 = _interopRequireDefault(_label);
 
@@ -11022,7 +11509,7 @@
 	}
 
 /***/ },
-/* 14 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11033,7 +11520,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11079,7 +11566,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 15 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11090,7 +11577,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11169,7 +11656,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 16 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11180,7 +11667,74 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var _class = (function () {
+	  function _class() {
+	    _classCallCheck(this, _class);
+
+	    this.outerGeometry = new THREE.RingGeometry(0, 1, 64);
+	    this.outerMaterial = new THREE.MeshBasicMaterial({ color: 0x3DB5FF, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
+	    this.outerMesh = new THREE.Mesh(this.outerGeometry, this.outerMaterial);
+	    // Set ring a bit above 0 (=> above grid and axis).
+	    this.outerMesh.position.z = 0.004 * _constants.SF;
+
+	    this.innerGeometry = new THREE.RingGeometry(0, 1, 64);
+	    this.innerMaterial = new THREE.MeshBasicMaterial({ color: 0x00000, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+	    this.innerMesh = new THREE.Mesh(this.innerGeometry, this.innerMaterial);
+	    this.innerMesh.position.z = 0.005 * _constants.SF;
+
+	    this.posObject = new THREE.Object3D();
+	    this.posObject.add(this.outerMesh);
+	    this.posObject.add(this.innerMesh);
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setProps',
+	    value: function setProps(props) {
+	      this.rootObject.visible = props.visible;
+	      this.innerRadius = props.innerRadius;
+	      this.outerRadius = props.outerRadius;
+	    }
+	  }, {
+	    key: 'rootObject',
+	    get: function get() {
+	      return this.posObject;
+	    }
+	  }, {
+	    key: 'innerRadius',
+	    set: function set(v) {
+	      v = v * _constants.SF;
+	      this.innerMesh.scale.set(v, v, v);
+	    }
+	  }, {
+	    key: 'outerRadius',
+	    set: function set(v) {
+	      v = v * _constants.SF;
+	      this.outerMesh.scale.set(v, v, v);
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _constants = __webpack_require__(13);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11352,7 +11906,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 17 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11363,7 +11917,7 @@
 	  value: true
 	});
 
-	var _jquery = __webpack_require__(8);
+	var _jquery = __webpack_require__(2);
 
 	var _jquery2 = _interopRequireDefault(_jquery);
 
@@ -11503,7 +12057,7 @@
 	}
 
 /***/ },
-/* 18 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11512,11 +12066,11 @@
 	  value: true
 	});
 
-	var _physics = __webpack_require__(4);
+	var _physics = __webpack_require__(12);
 
-	var _utils = __webpack_require__(3);
+	var _utils = __webpack_require__(11);
 
-	var _constants = __webpack_require__(5);
+	var _constants = __webpack_require__(13);
 
 	exports.default = {
 	  // === PLANETS ===
@@ -11698,7 +12252,82 @@
 	};
 
 /***/ },
-/* 19 */
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.default = analyzeHabitability;
+
+	var _utils = __webpack_require__(11);
+
+	var _physics = __webpack_require__(12);
+
+	var MARS_MASS = 0.107; // of Earth mass
+	var ANALYZE_TIMESTEP = 0.001;
+	var MAX_STEPS = 10000000;
+
+	function analyzeHabitability(star, planet, habitationZone) {
+	  var orbit = calcOrbit(star, planet, habitationZone.innerRadius, habitationZone.outerRadius);
+	  return {
+	    starType: star.type !== 'A' && star.type !== 'M',
+	    planetType: planet.rocky,
+	    planetSize: planet.diameter > Math.pow(4 * MARS_MASS, 0.3333),
+	    orbitalDistance: orbit.minDist > habitationZone.innerRadius && orbit.maxDist < habitationZone.outerRadius
+	  };
+	}
+
+	function calcOrbit(star, planet, allowedMin, allowedMax) {
+	  // Copy star, so we don't modify the provided object!
+	  planet = (0, _utils.deepExtend)({}, planet);
+	  var orbitReady = false;
+	  var prevDist = null;
+	  var trends = [];
+	  var orbit = {
+	    maxDist: -Infinity,
+	    minDist: Infinity
+	  };
+	  var step = 0;
+
+	  while (!orbitReady && step < MAX_STEPS) {
+	    var dist = distance(planet.x, planet.y);
+	    orbit.maxDist = Math.max(dist, orbit.maxDist);
+	    orbit.minDist = Math.min(dist, orbit.minDist);
+
+	    if (prevDist !== null) {
+	      if (dist > prevDist && trends[0] !== '+') {
+	        trends.unshift('+');
+	      } else if (dist < prevDist && trends[0] !== '-') {
+	        trends.unshift('-');
+	      }
+	      // Possible cases: ['+', '-', '+'] or ['-', '+', '-']
+	      // When we have observed three different trends (planet moving towards or away from star),
+	      // it means that the planed have done the full orbit around the star.
+	      if (trends.length >= 3) {
+	        orbitReady = true;
+	      }
+	      // Don't continue calculation if orbit doesn't fit into the allowed range.
+	      if (orbit.maxDist > allowedMax || orbit.minDist < allowedMin) {
+	        orbitReady = true;
+	      }
+	    }
+	    prevDist = dist;
+	    step += 1;
+	    (0, _physics.updatePlanet)(star, planet, ANALYZE_TIMESTEP);
+	  }
+
+	  return orbit;
+	}
+
+	function distance(x, y) {
+	  return Math.sqrt(x * x + y * y);
+	}
+
+/***/ },
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11764,13 +12393,13 @@
 	  phone.post('outputs', getLabStdOutputs(app.state));
 	};
 
-	var _utils = __webpack_require__(3);
+	var _utils = __webpack_require__(11);
 
-	var _iframePhone = __webpack_require__(20);
+	var _iframePhone = __webpack_require__(5);
 
 	var _iframePhone2 = _interopRequireDefault(_iframePhone);
 
-	var _physics = __webpack_require__(4);
+	var _physics = __webpack_require__(12);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -11844,639 +12473,6 @@
 	    flattenObject(value[key], prefix ? prefix + '.' + key : key, result);
 	  });
 	  return result;
-	}
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = {
-	  /**
-	   * Allows to communicate with an iframe.
-	   */
-	  ParentEndpoint:  __webpack_require__(21),
-	  /**
-	   * Allows to communicate with a parent page.
-	   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
-	   */
-	  getIFrameEndpoint: __webpack_require__(23),
-	  structuredClone: __webpack_require__(22),
-
-	  // TODO: May be misnamed
-	  IframePhoneRpcEndpoint: __webpack_require__(24)
-
-	};
-
-
-/***/ },
-/* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var structuredClone = __webpack_require__(22);
-
-	/**
-	  Call as:
-	    new ParentEndpoint(targetWindow, targetOrigin, afterConnectedCallback)
-	      targetWindow is a WindowProxy object. (Messages will be sent to it)
-
-	      targetOrigin is the origin of the targetWindow. (Messages will be restricted to this origin)
-
-	      afterConnectedCallback is an optional callback function to be called when the connection is
-	        established.
-
-	  OR (less secure):
-	    new ParentEndpoint(targetIframe, afterConnectedCallback)
-
-	      targetIframe is a DOM object (HTMLIframeElement); messages will be sent to its contentWindow.
-
-	      afterConnectedCallback is an optional callback function
-
-	    In this latter case, targetOrigin will be inferred from the value of the src attribute of the
-	    provided DOM object at the time of the constructor invocation. This is less secure because the
-	    iframe might have been navigated to an unexpected domain before constructor invocation.
-
-	  Note that it is important to specify the expected origin of the iframe's content to safeguard
-	  against sending messages to an unexpected domain. This might happen if our iframe is navigated to
-	  a third-party URL unexpectedly. Furthermore, having a reference to Window object (as in the first
-	  form of the constructor) does not protect against sending a message to the wrong domain. The
-	  window object is actualy a WindowProxy which transparently proxies the Window object of the
-	  underlying iframe, so that when the iframe is navigated, the "same" WindowProxy now references a
-	  completely differeent Window object, possibly controlled by a hostile domain.
-
-	  See http://www.esdiscuss.org/topic/a-dom-use-case-that-can-t-be-emulated-with-direct-proxies for
-	  more about this weird behavior of WindowProxies (the type returned by <iframe>.contentWindow).
-	*/
-
-	module.exports = function ParentEndpoint(targetWindowOrIframeEl, targetOrigin, afterConnectedCallback) {
-	  var selfOrigin = window.location.href.match(/(.*?\/\/.*?)\//)[1];
-	  var postMessageQueue = [];
-	  var connected = false;
-	  var handlers = {};
-	  var targetWindowIsIframeElement;
-
-	  function getOrigin(iframe) {
-	    return iframe.src.match(/(.*?\/\/.*?)\//)[1];
-	  }
-
-	  function post(type, content) {
-	    var message;
-	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
-	    // as the first argument.
-	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
-	      message = type;
-	    } else {
-	      message = {
-	        type: type,
-	        content: content
-	      };
-	    }
-	    if (connected) {
-	      var tWindow = getTargetWindow();
-	      // if we are laready connected ... send the message
-	      message.origin = selfOrigin;
-	      // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
-	      //     https://github.com/Modernizr/Modernizr/issues/388
-	      //     http://jsfiddle.net/ryanseddon/uZTgD/2/
-	      if (structuredClone.supported()) {
-	        tWindow.postMessage(message, targetOrigin);
-	      } else {
-	        tWindow.postMessage(JSON.stringify(message), targetOrigin);
-	      }
-	    } else {
-	      // else queue up the messages to send after connection complete.
-	      postMessageQueue.push(message);
-	    }
-	  }
-
-	  function addListener(messageName, func) {
-	    handlers[messageName] = func;
-	  }
-
-	  function removeListener(messageName) {
-	    handlers[messageName] = null;
-	  }
-
-	  // Note that this function can't be used when IFrame element hasn't been added to DOM yet
-	  // (.contentWindow would be null). At the moment risk is purely theoretical, as the parent endpoint
-	  // only listens for an incoming 'hello' message and the first time we call this function
-	  // is in #receiveMessage handler (so iframe had to be initialized before, as it could send 'hello').
-	  // It would become important when we decide to refactor the way how communication is initialized.
-	  function getTargetWindow() {
-	    if (targetWindowIsIframeElement) {
-	      var tWindow = targetWindowOrIframeEl.contentWindow;
-	      if (!tWindow) {
-	        throw "IFrame element needs to be added to DOM before communication " +
-	              "can be started (.contentWindow is not available)";
-	      }
-	      return tWindow;
-	    }
-	    return targetWindowOrIframeEl;
-	  }
-
-	  function receiveMessage(message) {
-	    var messageData;
-	    if (message.source === getTargetWindow() && message.origin === targetOrigin) {
-	      messageData = message.data;
-	      if (typeof messageData === 'string') {
-	        messageData = JSON.parse(messageData);
-	      }
-	      if (handlers[messageData.type]) {
-	        handlers[messageData.type](messageData.content);
-	      } else {
-	        console.log("cant handle type: " + messageData.type);
-	      }
-	    }
-	  }
-
-	  function disconnect() {
-	    connected = false;
-	    window.removeEventListener('message', receiveMessage);
-	  }
-
-	  // handle the case that targetWindowOrIframeEl is actually an <iframe> rather than a Window(Proxy) object
-	  // Note that if it *is* a WindowProxy, this probe will throw a SecurityException, but in that case
-	  // we also don't need to do anything
-	  try {
-	    targetWindowIsIframeElement = targetWindowOrIframeEl.constructor === HTMLIFrameElement;
-	  } catch (e) {
-	    targetWindowIsIframeElement = false;
-	  }
-
-	  if (targetWindowIsIframeElement) {
-	    // Infer the origin ONLY if the user did not supply an explicit origin, i.e., if the second
-	    // argument is empty or is actually a callback (meaning it is supposed to be the
-	    // afterConnectionCallback)
-	    if (!targetOrigin || targetOrigin.constructor === Function) {
-	      afterConnectedCallback = targetOrigin;
-	      targetOrigin = getOrigin(targetWindowOrIframeEl);
-	    }
-	  }
-
-	  // when we receive 'hello':
-	  addListener('hello', function() {
-	    connected = true;
-
-	    // send hello response
-	    post('hello');
-
-	    // give the user a chance to do things now that we are connected
-	    // note that is will happen before any queued messages
-	    if (afterConnectedCallback && typeof afterConnectedCallback === "function") {
-	      afterConnectedCallback();
-	    }
-
-	    // Now send any messages that have been queued up ...
-	    while(postMessageQueue.length > 0) {
-	      post(postMessageQueue.shift());
-	    }
-	  });
-
-	  window.addEventListener('message', receiveMessage, false);
-
-	  // Public API.
-	  return {
-	    post: post,
-	    addListener: addListener,
-	    removeListener: removeListener,
-	    disconnect: disconnect,
-	    getTargetWindow: getTargetWindow,
-	    targetOrigin: targetOrigin
-	  };
-	};
-
-
-/***/ },
-/* 22 */
-/***/ function(module, exports) {
-
-	var featureSupported = false;
-
-	(function () {
-	  var result = 0;
-
-	  if (!!window.postMessage) {
-	    try {
-	      // Safari 5.1 will sometimes throw an exception and sometimes won't, lolwut?
-	      // When it doesn't we capture the message event and check the
-	      // internal [[Class]] property of the message being passed through.
-	      // Safari will pass through DOM nodes as Null iOS safari on the other hand
-	      // passes it through as DOMWindow, gotcha.
-	      window.onmessage = function(e){
-	        var type = Object.prototype.toString.call(e.data);
-	        result = (type.indexOf("Null") != -1 || type.indexOf("DOMWindow") != -1) ? 1 : 0;
-	        featureSupported = {
-	          'structuredClones': result
-	        };
-	      };
-	      // Spec states you can't transmit DOM nodes and it will throw an error
-	      // postMessage implimentations that support cloned data will throw.
-	      window.postMessage(document.createElement("a"),"*");
-	    } catch(e) {
-	      // BBOS6 throws but doesn't pass through the correct exception
-	      // so check error message
-	      result = (e.DATA_CLONE_ERR || e.message == "Cannot post cyclic structures.") ? 1 : 0;
-	      featureSupported = {
-	        'structuredClones': result
-	      };
-	    }
-	  }
-	}());
-
-	exports.supported = function supported() {
-	  return featureSupported && featureSupported.structuredClones > 0;
-	};
-
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var structuredClone = __webpack_require__(22);
-	var HELLO_INTERVAL_LENGTH = 200;
-	var HELLO_TIMEOUT_LENGTH = 60000;
-
-	function IFrameEndpoint() {
-	  var parentOrigin;
-	  var listeners = {};
-	  var isInitialized = false;
-	  var connected = false;
-	  var postMessageQueue = [];
-	  var helloInterval;
-
-	  function postToTarget(message, target) {
-	    // See http://dev.opera.com/articles/view/window-postmessage-messagechannel/#crossdoc
-	    //     https://github.com/Modernizr/Modernizr/issues/388
-	    //     http://jsfiddle.net/ryanseddon/uZTgD/2/
-	    if (structuredClone.supported()) {
-	      window.parent.postMessage(message, target);
-	    } else {
-	      window.parent.postMessage(JSON.stringify(message), target);
-	    }
-	  }
-
-	  function post(type, content) {
-	    var message;
-	    // Message object can be constructed from 'type' and 'content' arguments or it can be passed
-	    // as the first argument.
-	    if (arguments.length === 1 && typeof type === 'object' && typeof type.type === 'string') {
-	      message = type;
-	    } else {
-	      message = {
-	        type: type,
-	        content: content
-	      };
-	    }
-	    if (connected) {
-	      postToTarget(message, parentOrigin);
-	    } else {
-	      postMessageQueue.push(message);
-	    }
-	  }
-
-	  // Only the initial 'hello' message goes permissively to a '*' target (because due to cross origin
-	  // restrictions we can't find out our parent's origin until they voluntarily send us a message
-	  // with it.)
-	  function postHello() {
-	    postToTarget({
-	      type: 'hello',
-	      origin: document.location.href.match(/(.*?\/\/.*?)\//)[1]
-	    }, '*');
-	  }
-
-	  function addListener(type, fn) {
-	    listeners[type] = fn;
-	  }
-
-	  function removeAllListeners() {
-	    listeners = {};
-	  }
-
-	  function getListenerNames() {
-	    return Object.keys(listeners);
-	  }
-
-	  function messageListener(message) {
-	      // Anyone can send us a message. Only pay attention to messages from parent.
-	      if (message.source !== window.parent) return;
-
-	      var messageData = message.data;
-
-	      if (typeof messageData === 'string') messageData = JSON.parse(messageData);
-
-	      // We don't know origin property of parent window until it tells us.
-	      if (!connected && messageData.type === 'hello') {
-	        // This is the return handshake from the embedding window.
-	        parentOrigin = messageData.origin;
-	        connected = true;
-	        stopPostingHello();
-	        while(postMessageQueue.length > 0) {
-	          post(postMessageQueue.shift());
-	        }
-	      }
-
-	      // Perhaps-redundantly insist on checking origin as well as source window of message.
-	      if (message.origin === parentOrigin) {
-	        if (listeners[messageData.type]) listeners[messageData.type](messageData.content);
-	      }
-	   }
-
-	   function disconnect() {
-	     connected = false;
-	     stopPostingHello();
-	     window.removeEventListener('message', messsageListener);
-	   }
-
-	  /**
-	    Initialize communication with the parent frame. This should not be called until the app's custom
-	    listeners are registered (via our 'addListener' public method) because, once we open the
-	    communication, the parent window may send any messages it may have queued. Messages for which
-	    we don't have handlers will be silently ignored.
-	  */
-	  function initialize() {
-	    if (isInitialized) {
-	      return;
-	    }
-	    isInitialized = true;
-	    if (window.parent === window) return;
-
-	    // We kick off communication with the parent window by sending a "hello" message. Then we wait
-	    // for a handshake (another "hello" message) from the parent window.
-	    postHello();
-	    startPostingHello();
-	    window.addEventListener('message', messageListener, false);
-	  }
-
-	  function startPostingHello() {
-	    if (helloInterval) {
-	      stopPostingHello();
-	    }
-	    helloInterval = window.setInterval(postHello, HELLO_INTERVAL_LENGTH);
-	    window.setTimeout(stopPostingHello, HELLO_TIMEOUT_LENGTH);
-	  }
-
-	  function stopPostingHello() {
-	    window.clearInterval(helloInterval);
-	    helloInterval = null;
-	  }
-
-	  // Public API.
-	  return {
-	    initialize        : initialize,
-	    getListenerNames  : getListenerNames,
-	    addListener       : addListener,
-	    removeAllListeners: removeAllListeners,
-	    disconnect        : disconnect,
-	    post              : post
-	  };
-	}
-
-	var instance = null;
-
-	// IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
-	module.exports = function getIFrameEndpoint() {
-	  if (!instance) {
-	    instance = new IFrameEndpoint();
-	  }
-	  return instance;
-	};
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var ParentEndpoint = __webpack_require__(21);
-	var getIFrameEndpoint = __webpack_require__(23);
-
-	// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
-	// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
-	function getPseudoUUID() {
-	    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-	    var len = chars.length;
-	    var ret = [];
-
-	    for (var i = 0; i < 10; i++) {
-	        ret.push(chars[Math.floor(Math.random() * len)]);
-	    }
-	    return ret.join('');
-	}
-
-	module.exports = function IframePhoneRpcEndpoint(handler, namespace, targetWindow, targetOrigin, phone) {
-	    var pendingCallbacks = Object.create({});
-
-	    // if it's a non-null object, rather than a function, 'handler' is really an options object
-	    if (handler && typeof handler === 'object') {
-	        namespace = handler.namespace;
-	        targetWindow = handler.targetWindow;
-	        targetOrigin = handler.targetOrigin;
-	        phone = handler.phone;
-	        handler = handler.handler;
-	    }
-
-	    if ( ! phone ) {
-	        if (targetWindow === window.parent) {
-	            phone = getIFrameEndpoint();
-	            phone.initialize();
-	        } else {
-	            phone = new ParentEndpoint(targetWindow, targetOrigin);
-	        }
-	    }
-
-	    phone.addListener(namespace, function(message) {
-	        var callbackObj;
-
-	        if (message.messageType === 'call' && typeof this.handler === 'function') {
-	            this.handler.call(undefined, message.value, function(returnValue) {
-	                phone.post(namespace, {
-	                    messageType: 'returnValue',
-	                    uuid: message.uuid,
-	                    value: returnValue
-	                });
-	            });
-	        } else if (message.messageType === 'returnValue') {
-	            callbackObj = pendingCallbacks[message.uuid];
-
-	            if (callbackObj) {
-	                window.clearTimeout(callbackObj.timeout);
-	                if (callbackObj.callback) {
-	                    callbackObj.callback.call(undefined, message.value);
-	                }
-	                pendingCallbacks[message.uuid] = null;
-	            }
-	        }
-	    }.bind(this));
-
-	    function call(message, callback) {
-	        var uuid = getPseudoUUID();
-
-	        pendingCallbacks[uuid] = {
-	            callback: callback,
-	            timeout: window.setTimeout(function() {
-	                if (callback) {
-	                    callback(undefined, new Error("IframePhone timed out waiting for reply"));
-	                }
-	            }, 2000)
-	        };
-
-	        phone.post(namespace, {
-	            messageType: 'call',
-	            uuid: uuid,
-	            value: message
-	        });
-	    }
-
-	    function disconnect() {
-	        phone.disconnect();
-	    }
-
-	    this.handler = handler;
-	    this.call = call.bind(this);
-	    this.disconnect = disconnect.bind(this);
-	};
-
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(5);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var _class = (function () {
-	  function _class() {
-	    _classCallCheck(this, _class);
-
-	    this.outerGeometry = new THREE.RingGeometry(0, 1, 64);
-	    this.outerMaterial = new THREE.MeshBasicMaterial({ color: 0x3DB5FF, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
-	    this.outerMesh = new THREE.Mesh(this.outerGeometry, this.outerMaterial);
-	    // Set ring a bit above 0 (=> above grid and axis).
-	    this.outerMesh.position.z = 0.004 * _constants.SF;
-
-	    this.innerGeometry = new THREE.RingGeometry(0, 1, 64);
-	    this.innerMaterial = new THREE.MeshBasicMaterial({ color: 0x00000, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
-	    this.innerMesh = new THREE.Mesh(this.innerGeometry, this.innerMaterial);
-	    this.innerMesh.position.z = 0.005 * _constants.SF;
-
-	    this.posObject = new THREE.Object3D();
-	    this.posObject.add(this.outerMesh);
-	    this.posObject.add(this.innerMesh);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      this.rootObject.visible = props.visible;
-	      this.innerRadius = props.innerRadius;
-	      this.outerRadius = props.outerRadius;
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.posObject;
-	    }
-	  }, {
-	    key: 'innerRadius',
-	    set: function set(v) {
-	      v = v * _constants.SF;
-	      this.innerMesh.scale.set(v, v, v);
-	    }
-	  }, {
-	    key: 'outerRadius',
-	    set: function set(v) {
-	      v = v * _constants.SF;
-	      this.outerMesh.scale.set(v, v, v);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 26 */,
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.default = analyzeHabitability;
-
-	var _utils = __webpack_require__(3);
-
-	var _physics = __webpack_require__(4);
-
-	var MARS_MASS = 0.107; // of Earth mass
-	var ANALYZE_TIMESTEP = 0.001;
-	var MAX_STEPS = 10000000;
-
-	function analyzeHabitability(star, planet, habitationZone) {
-	  var orbit = calcOrbit(star, planet, habitationZone.innerRadius, habitationZone.outerRadius);
-	  return {
-	    starType: star.type !== 'A' && star.type !== 'M',
-	    planetType: planet.rocky,
-	    planetSize: planet.diameter > Math.pow(4 * MARS_MASS, 0.3333),
-	    orbitalDistance: orbit.minDist > habitationZone.innerRadius && orbit.maxDist < habitationZone.outerRadius
-	  };
-	}
-
-	function calcOrbit(star, planet, allowedMin, allowedMax) {
-	  // Copy star, so we don't modify the provided object!
-	  planet = (0, _utils.deepExtend)({}, planet);
-	  var orbitReady = false;
-	  var prevDist = null;
-	  var trends = [];
-	  var orbit = {
-	    maxDist: -Infinity,
-	    minDist: Infinity
-	  };
-	  var step = 0;
-
-	  while (!orbitReady && step < MAX_STEPS) {
-	    var dist = distance(planet.x, planet.y);
-	    orbit.maxDist = Math.max(dist, orbit.maxDist);
-	    orbit.minDist = Math.min(dist, orbit.minDist);
-
-	    if (prevDist !== null) {
-	      if (dist > prevDist && trends[0] !== '+') {
-	        trends.unshift('+');
-	      } else if (dist < prevDist && trends[0] !== '-') {
-	        trends.unshift('-');
-	      }
-	      // Possible cases: ['+', '-', '+'] or ['-', '+', '-']
-	      // When we have observed three different trends (planet moving towards or away from star),
-	      // it means that the planed have done the full orbit around the star.
-	      if (trends.length >= 3) {
-	        orbitReady = true;
-	      }
-	      // Don't continue calculation if orbit doesn't fit into the allowed range.
-	      if (orbit.maxDist > allowedMax || orbit.minDist < allowedMin) {
-	        orbitReady = true;
-	      }
-	    }
-	    prevDist = dist;
-	    step += 1;
-	    (0, _physics.updatePlanet)(star, planet, ANALYZE_TIMESTEP);
-	  }
-
-	  return orbit;
-	}
-
-	function distance(x, y) {
-	  return Math.sqrt(x * x + y * y);
 	}
 
 /***/ }

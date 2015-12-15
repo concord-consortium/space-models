@@ -49,10 +49,6 @@ export default class {
     this._showTilt(props.camera.tiltLocked ? false : props.camera.tilt.toFixed(2));
   }
 
-  getCameraTilt() {
-    return this.camera.tilt;
-  }
-
   addBreadCrumb(x, y) {
     this.breadCrumbs.addBreadCrumb(x, y);
   }
