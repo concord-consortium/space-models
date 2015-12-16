@@ -46,11 +46,11 @@
 
 	'use strict';
 
-	var _app = __webpack_require__(11);
+	var _app = __webpack_require__(1);
 
 	var _app2 = _interopRequireDefault(_app);
 
-	var _labIntegration = __webpack_require__(29);
+	var _labIntegration = __webpack_require__(5);
 
 	var _labIntegration2 = _interopRequireDefault(_labIntegration);
 
@@ -71,7 +71,144 @@
 	}
 
 /***/ },
-/* 1 */,
+/* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _jquery = __webpack_require__(2);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
+	var _eventemitter = __webpack_require__(3);
+
+	var _eventemitter2 = _interopRequireDefault(_eventemitter);
+
+	var _view = __webpack_require__(4);
+
+	var _view2 = _interopRequireDefault(_view);
+
+	var _utils = __webpack_require__(30);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var NOTIFY_TICK_INTERVAL = 10;
+	var TIMESTEP = 0.001;
+
+	var DEF_STATE = {
+	  time: 0,
+	  planet: {
+	    x: -6,
+	    y: 0,
+	    diameter: 1
+	  },
+	  star: {
+	    x: 0,
+	    y: 0,
+	    diameter: 6
+	  },
+	  lightIntensity: 'output' // [0, 1]
+	};
+
+	var _class = (function () {
+	  function _class(parentEl) {
+	    var _this = this;
+
+	    _classCallCheck(this, _class);
+
+	    this.state = _jquery2.default.extend(true, {}, DEF_STATE);
+	    this.calculateOutputs();
+
+	    this.view = new _view2.default(parentEl);
+	    this.view.on('planet.change', function (planetState) {
+	      _this.state.planet.x = planetState.x;
+	      _this.state.planet.y = planetState.y;
+	    });
+
+	    this.tick = 0;
+	    this.isPlaying = false;
+
+	    this.dispatch = new _eventemitter2.default();
+
+	    this._rafCallback = this._rafCallback.bind(this);
+	    this._rafCallback();
+	  }
+
+	  _createClass(_class, [{
+	    key: 'calculateOutputs',
+	    value: function calculateOutputs() {
+	      this.state.lightIntensity = lightIntensity(this.state.star, this.state.planet);
+	    }
+	  }, {
+	    key: 'on',
+	    value: function on() {
+	      // Delegate #on to EventEmitter object.
+	      this.dispatch.on.apply(this.dispatch, arguments);
+	    }
+	  }, {
+	    key: 'play',
+	    value: function play() {
+	      this.isPlaying = true;
+	      this.dispatch.emit('play');
+	    }
+	  }, {
+	    key: 'stop',
+	    value: function stop() {
+	      this.isPlaying = false;
+	      this.dispatch.emit('stop');
+	    }
+	  }, {
+	    key: 'resize',
+	    value: function resize() {
+	      this.view.resize();
+	    }
+	  }, {
+	    key: 'setState',
+	    value: function setState(newState) {
+	      deepExtend(this.state, newState);
+	    }
+	  }, {
+	    key: '_rafCallback',
+	    value: function _rafCallback() {
+	      if (this.isPlaying) {
+	        this.tick += 1;
+	        this.state.time += TIMESTEP;
+	        if (this.tick % NOTIFY_TICK_INTERVAL === 0) {
+	          this.calculateOutputs();
+	          this.dispatch.emit('tick', this.state);
+	        }
+	      }
+	      this.view.render(this.state.star, this.state.planet);
+	      this._rafID = requestAnimationFrame(this._rafCallback);
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+	function lightIntensity(star, planet) {
+	  var planetR = planet.diameter * 0.5;
+	  var starR = star.diameter * 0.5;
+	  var planetArea = Math.PI * planetR * planetR;
+	  var starArea = Math.PI * starR * starR;
+	  var d = (0, _utils.distObj)(star, planet);
+	  var biggerR = Math.max(star.diameter, planet.diameter) * 0.5;
+	  var smallerR = Math.min(star.diameter, planet.diameter) * 0.5;
+	  var ratio = Math.max(0, Math.min(1, 1 - (d - (biggerR - smallerR)) / (2 * smallerR)));
+	  return 1 - ratio * Math.min(1, planetArea / starArea);
+	}
+
+/***/ },
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -9867,8 +10004,244 @@
 
 
 /***/ },
-/* 4 */,
-/* 5 */,
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _jquery = __webpack_require__(2);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
+	var _eventemitter = __webpack_require__(3);
+
+	var _eventemitter2 = _interopRequireDefault(_eventemitter);
+
+	var _utils = __webpack_require__(30);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var MOVE_CURSOR = 'move';
+	var DEFAULT_CURSOR = 'default';
+	var HEIGHT = 10;
+
+	var _class = (function () {
+	  function _class(parentEl) {
+	    _classCallCheck(this, _class);
+
+	    this.$canvas = (0, _jquery2.default)('<canvas>');
+	    this.$canvas.appendTo(parentEl);
+	    this.ctx = this.$canvas[0].getContext('2d');
+
+	    this.dispatch = new _eventemitter2.default();
+
+	    this.resize();
+	    this.setupInteraction();
+	  }
+
+	  _createClass(_class, [{
+	    key: 'setProps',
+	    value: function setProps(props) {}
+	  }, {
+	    key: 'resize',
+	    value: function resize() {
+	      this.width = this.$canvas.parent().width() * window.devicePixelRatio;
+	      this.height = this.$canvas.parent().height() * window.devicePixelRatio;
+	      this.scaleFactor = this.height / HEIGHT;
+	      this.$canvas.attr({
+	        width: this.width,
+	        height: this.height
+	      });
+	      this.$canvas.css({
+	        width: this.width / window.devicePixelRatio,
+	        height: this.height / window.devicePixelRatio
+	      });
+	    }
+	  }, {
+	    key: 's',
+	    value: function s(val) {
+	      return val * this.scaleFactor;
+	    }
+	  }, {
+	    key: 'sInv',
+	    value: function sInv(val) {
+	      return val / this.scaleFactor;
+	    }
+	  }, {
+	    key: 'sx',
+	    value: function sx(x) {
+	      return x * this.scaleFactor + this.width * 0.5;
+	    }
+	  }, {
+	    key: 'sxInv',
+	    value: function sxInv(x) {
+	      return (x - this.width * 0.5) / this.scaleFactor;
+	    }
+	  }, {
+	    key: 'sy',
+	    value: function sy(y) {
+	      return this.height - (y * this.scaleFactor + this.height * 0.5);
+	    }
+	  }, {
+	    key: 'syInv',
+	    value: function syInv(y) {
+	      return (this.height - y - this.height * 0.5) / this.scaleFactor;
+	    }
+	  }, {
+	    key: 'pInv',
+	    value: function pInv(p) {
+	      p.x = this.sxInv(p.x);
+	      p.y = this.syInv(p.y);
+	      return p;
+	    }
+	  }, {
+	    key: 'setCursor',
+	    value: function setCursor(v) {
+	      this.$canvas.css('cursor', v);
+	    }
+
+	    // Delegate #on to EventEmitter object.
+
+	  }, {
+	    key: 'on',
+	    value: function on() {
+	      this.dispatch.on.apply(this.dispatch, arguments);
+	    }
+	  }, {
+	    key: 'render',
+	    value: function render(star, planet) {
+	      this.ctx.fillStyle = 'black';
+	      this.ctx.fillRect(0, 0, this.width, this.height);
+
+	      this.renderCircle(star, '#ffff00', '#aaaa00', 'star');
+	      this.renderCircle(planet, '#004A82', '#0076D0', 'planet');
+
+	      this.star = star;
+	      this.planet = planet;
+	    }
+	  }, {
+	    key: 'renderCircle',
+	    value: function renderCircle(data, fillColor, strokeColor, title) {
+	      this.ctx.beginPath();
+	      this.ctx.arc(this.sx(data.x), this.sy(data.y), this.s(data.diameter * 0.5), 0, 2 * Math.PI, false);
+	      this.ctx.fillStyle = fillColor;
+	      this.ctx.fill();
+	      this.ctx.lineWidth = this.s(data.diameter * 0.01);
+	      this.ctx.strokeStyle = strokeColor;
+	      this.ctx.stroke();
+	      this.ctx.font = this.s(0.5) + "px Arial";
+	      this.ctx.fillText(title, this.sx(data.x + 0.52 * data.diameter), this.sy(data.y - 0.45 * data.diameter));
+	    }
+	  }, {
+	    key: 'setupInteraction',
+	    value: function setupInteraction() {
+	      var _this = this;
+
+	      var $canvas = this.$canvas;
+	      var dragging = false;
+	      var offset = {};
+	      $canvas.on('mousemove touchmove', function (evt) {
+	        var p = mousePosHD(evt, $canvas);
+	        _this.pInv(p);
+	        var d = (0, _utils.distObj)(p, _this.planet);
+	        _this.setCursor(dragging || d < interactionRadius(_this.planet) ? MOVE_CURSOR : DEFAULT_CURSOR);
+	        if (dragging) {
+	          _this.dispatch.emit('planet.change', { x: p.x + offset.x, y: p.y + offset.y });
+	        }
+	      });
+	      $canvas.on('mousedown touchstart', function (evt) {
+	        var p = mousePosHD(evt, $canvas);
+	        _this.pInv(p);
+	        var d = (0, _utils.distObj)(p, _this.planet);
+	        if (d < interactionRadius(_this.planet)) {
+	          offset.x = _this.planet.x - p.x;
+	          offset.y = _this.planet.y - p.y;
+	          dragging = true;
+	        }
+	      });
+	      $canvas.on('mouseup touchend touchcancel', function () {
+	        dragging = false;
+	      });
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+	function mousePosHD(evt, target) {
+	  var p = (0, _utils.mousePos)(evt, target);
+	  p.x *= window.devicePixelRatio;
+	  p.y *= window.devicePixelRatio;
+	  return p;
+	}
+
+	function interactionRadius(planet) {
+	  return Math.max(0.4, planet.diameter * 0.5);
+	}
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	exports.default = function (app) {
+	  var phone = _iframePhone2.default.getIFrameEndpoint();
+
+	  app.on('play', function () {
+	    phone.post('play.iframe-model');
+	  });
+	  app.on('stop', function () {
+	    phone.post('stop.iframe-model');
+	  });
+	  app.on('tick', function (newState) {
+	    phone.post('tick', { outputs: getLabOutputs(newState) });
+	  });
+
+	  phone.addListener('play', function () {
+	    app.play();
+	  });
+	  phone.addListener('stop', function () {
+	    app.stop();
+	  });
+	  phone.addListener('set', function (content) {
+	    if (content.name === 'planet.diameter') {
+	      app.state.planet.diameter = content.value;
+	    }
+	  });
+
+	  phone.initialize();
+	  phone.post('outputs', getLabOutputs(app.state));
+	};
+
+	var _iframePhone = __webpack_require__(6);
+
+	var _iframePhone2 = _interopRequireDefault(_iframePhone);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function getLabOutputs(state) {
+	  return {
+	    time: state.time,
+	    lightIntensity: state.lightIntensity
+	  };
+	}
+
+/***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -10359,2111 +10732,25 @@
 
 
 /***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _eventemitter = __webpack_require__(3);
-
-	var _eventemitter2 = _interopRequireDefault(_eventemitter);
-
-	var _utils = __webpack_require__(12);
-
-	var _physics = __webpack_require__(13);
-
-	var _engine = __webpack_require__(15);
-
-	var engine = _interopRequireWildcard(_engine);
-
-	var _view = __webpack_require__(16);
-
-	var _view2 = _interopRequireDefault(_view);
-
-	var _presets = __webpack_require__(27);
-
-	var _presets2 = _interopRequireDefault(_presets);
-
-	var _constants = __webpack_require__(14);
-
-	var _analyzeHabitability2 = __webpack_require__(28);
-
-	var _analyzeHabitability3 = _interopRequireDefault(_analyzeHabitability2);
-
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
-
-	var DEF_STATE = {
-	  time: 0, // [ year ]
-	  timestep: 0.001, // [ year ]
-	  star: {
-	    x: 'output', // [ AU ]           - depends on planet position
-	    y: 'output', // [ AU ]
-	    vx: 'output', // [ AU / year ]    - depends on planet velocity
-	    vy: 'output', // [ AU / year ]
-	    mass: _constants.SOLAR_MASS, // [ earth masses ]
-	    scale: 1,
-	    color: 0xFFFF00,
-	    type: 'G'
-	  },
-	  habitationZone: {
-	    visible: false,
-	    innerRadius: 0.95, // [ AU ]
-	    outerRadius: 1.37 // [ AU ]
-	  },
-	  planet: {
-	    x: 1, // [ AU ]
-	    y: 0, // [ AU ]
-	    vx: 'fakeValue', // [ AU / year ]      - velocity will be calculated dynamically later!
-	    vy: 'fakeValue', // [ AU / year ]        See #setCircularVelocity call below.
-	    diameter: 1, // [ earth diameter ] - diameter multiplier, 1 => earth diameter
-	    rocky: true
-	  },
-	  camera: {
-	    tiltLocked: false,
-	    tilt: 90, // [ deg ], between 0 and 90
-	    distance: 10, // [ AU ]
-	    zoom: 1
-	  },
-	  telescope: {
-	    precision: 100, // [0..100], affects starCamVelocity and lightIntensity
-	    starCamVelocity: 'output', // [ AU / year ]
-	    lightIntensity: 'output' // [0..1], 1 is default intensity without occultation
-	  }
-	};
-	// Velocity will be set in such a way so that its orbit is circular.
-	(0, _physics.makeCircularOrbit)(DEF_STATE.planet, DEF_STATE.star);
-
-	var _class = (function () {
-	  function _class(parentEl) {
-	    var _this = this;
-
-	    _classCallCheck(this, _class);
-
-	    this.state = (0, _utils.deepExtend)({}, DEF_STATE);
-	    engine.calculateOutputs(this.state);
-
-	    this.view = new _view2.default(parentEl);
-	    this.view.on('camera.change', function (cameraState) {
-	      _this.setState({ camera: cameraState });
-	    });
-	    this.view.on('planet.change', function (planetState) {
-	      _this.setState({ planet: planetState });
-	    });
-
-	    this.tick = 0;
-	    this.isPlaying = false;
-
-	    this.dispatch = new _eventemitter2.default();
-
-	    this._setupBreadCrumbs();
-
-	    this._rafCallback = this._rafCallback.bind(this);
-	    this._rafCallback();
-	  }
-
-	  _createClass(_class, [{
-	    key: 'on',
-	    value: function on() {
-	      // Delegate #on to EventEmitter object.
-	      this.dispatch.on.apply(this.dispatch, arguments);
-	    }
-	  }, {
-	    key: 'play',
-	    value: function play() {
-	      this.isPlaying = true;
-	      this.dispatch.emit('play');
-	    }
-	  }, {
-	    key: 'stop',
-	    value: function stop() {
-	      this.isPlaying = false;
-	      this.dispatch.emit('stop');
-	    }
-	  }, {
-	    key: 'loadPreset',
-	    value: function loadPreset(name) {
-	      this.setState(_presets2.default[name]);
-	    }
-	  }, {
-	    key: 'analyzeHabitability',
-	    value: function analyzeHabitability() {
-	      return (0, _analyzeHabitability3.default)(this.state.star, this.state.planet, this.state.habitationZone);
-	    }
-	  }, {
-	    key: 'resize',
-	    value: function resize() {
-	      this.view.resize();
-	    }
-	  }, {
-	    key: 'setState',
-	    value: function setState(newState) {
-	      (0, _utils.deepExtend)(this.state, newState);
-	      this._emitStateChange();
-	    }
-	  }, {
-	    key: 'makeCircularOrbit',
-	    value: function makeCircularOrbit() {
-	      (0, _physics.makeCircularOrbit)(this.state.planet, this.state.star);
-	      this._emitStateChange();
-	    }
-	  }, {
-	    key: '_rafCallback',
-	    value: function _rafCallback() {
-	      if (this.isPlaying) {
-	        engine.tick(this.state);
-	        this.tick += 1;
-	        this.dispatch.emit('tick', this.state);
-	      }
-	      // User can interact with the model only when it's paused.
-	      this.view.interactionEnabled = !this.isPlaying;
-	      this.view.setProps(this.state);
-	      this.view.render();
-	      this._rafID = requestAnimationFrame(this._rafCallback);
-	    }
-	  }, {
-	    key: '_setupBreadCrumbs',
-	    value: function _setupBreadCrumbs() {
-	      var _this2 = this;
-
-	      this.on('state.change', function (newState) {
-	        if (newState.planet.diameter === 0) _this2.view.clearBreadCrumbs();
-	      });
-	      this.on('tick', function (newState) {
-	        if (_this2.tick % BREAD_CRUMBS_INTERVAL === 0 && newState.planet.diameter > 0) {
-	          // Don't add bread crumbs when diameter === 0 what means that there is no planet.
-	          _this2.view.addBreadCrumb(newState.planet.x, newState.planet.y);
-	        }
-	      });
-	    }
-	  }, {
-	    key: '_emitStateChange',
-	    value: function _emitStateChange() {
-	      this.dispatch.emit('state.change', this.state);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 12 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.extend = extend;
-	exports.deepExtend = deepExtend;
-
-	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
-	// Simplified jQuery.extend, based on from:
-	// https://github.com/jquery/jquery/blob/22449eb968622c2e14d6c8d8de2cf1e1ba4adccd/src/core.js#L118-L185
-	function extend() {
-	  var options,
-	      name,
-	      src,
-	      copy,
-	      copyIsArray,
-	      clone,
-	      target = arguments[0] || {},
-	      i = 1,
-	      length = arguments.length,
-	      deep = false;
-	  // Handle a deep copy situation
-	  if (typeof target === "boolean") {
-	    deep = target;
-	    // Skip the boolean and the target
-	    target = arguments[i] || {};
-	    i++;
-	  }
-	  // Handle case when target is a string or something (possible in deep copy)
-	  if ((typeof target === "undefined" ? "undefined" : _typeof(target)) !== "object") {
-	    target = {};
-	  }
-	  for (; i < length; i++) {
-	    // Only deal with non-null/undefined values
-	    if ((options = arguments[i]) != null) {
-	      // Extend the base object
-	      for (name in options) {
-	        src = target[name];
-	        copy = options[name];
-	        // Prevent never-ending loop
-	        if (target === copy) {
-	          continue;
-	        }
-	        // Recurse if we're merging plain objects or arrays
-	        if (deep && copy && (isPlainObject(copy) || (copyIsArray = Array.isArray(copy)))) {
-	          if (copyIsArray) {
-	            copyIsArray = false;
-	            clone = src && Array.isArray(src) ? src : [];
-	          } else {
-	            clone = src && isPlainObject(src) ? src : {};
-	          }
-	          // Never move original objects, clone them
-	          target[name] = extend(deep, clone, copy);
-	          // Don't bring in undefined values
-	        } else if (copy !== undefined) {
-	            target[name] = copy;
-	          }
-	      }
-	    }
-	  }
-	  // Return the modified object
-	  return target;
-	}
-
-	// Same as extend, but passing true as a first parameter.
-	function deepExtend() {
-	  var args = Array.prototype.slice.call(arguments);
-	  args.unshift(true);
-	  return extend.apply(null, args);
-	}
-
-	function isPlainObject(obj) {
-	  return (typeof obj === "undefined" ? "undefined" : _typeof(obj)) === "object";
-	}
-
-/***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.updatePlanet = updatePlanet;
-	exports.updateStar = updateStar;
-	exports.updateTelescope = updateTelescope;
-	exports.makeCircularOrbit = makeCircularOrbit;
-	exports.starCamVelocity = starCamVelocity;
-	exports.lightIntensity = lightIntensity;
-	exports.occultation = occultation;
-	exports.planetMass = planetMass;
-
-	var _utils = __webpack_require__(30);
-
-	var _constants = __webpack_require__(14);
-
-	var DEG_2_RAD = Math.PI / 180;
-	// The universal gravitational constant in AU, years, and earth-mass units.
-	var G = 0 - 2 * 5.922e-5;
-	// The relative density compared to Earth.
-	var ROCKY_PLANET_DENSITY = 1;
-	// The relative density of Jupiter compared to Earth.
-	var GAS_PLANET_DENSITY = 1 / 4.13;
-
-	var ERR_MSG = 'The model has diverged. Decrease timestep or velocity of the planet.';
-
-	function updatePlanet(star, planet, timestep) {
-	  leapFrog(star, planet, timestep);
-	  if (isNaN(planet.x + planet.y + planet.vx + planet.vy)) {
-	    alert(ERR_MSG);
-	    throw new Error(ERR_MSG);
-	  }
-	}
-
-	function updateStar(star, planet) {
-	  var rho = -planetMass(planet) / star.mass;
-	  star.x = rho * planet.x;
-	  star.y = rho * planet.y;
-	  star.vx = rho * planet.vx;
-	  star.vy = rho * planet.vy;
-	}
-
-	function updateTelescope(telescope, star, planet, camera, timestep) {
-	  telescope.starCamVelocity = starCamVelocity(star, camera, timestep);
-	  telescope.lightIntensity = lightIntensity(star, planet, camera);
-
-	  if (telescope.precision < 100) {
-	    // Add random noise.
-	    telescope.starCamVelocity += 0.15 * (Math.random() * 2 - 1) / telescope.precision;
-	    telescope.lightIntensity += 0.3 * -Math.random() / telescope.precision;
-	  }
-	}
-
-	function makeCircularOrbit(planet, star) {
-	  var p = planet;
-	  var a = Math.atan2(p.x, p.y);
-	  var d = Math.sqrt(p.x * p.x + p.y * p.y);
-	  var v = 2 * Math.PI / Math.sqrt(d) * Math.sqrt(star.mass / _constants.SOLAR_MASS);
-	  p.vx = -v * Math.cos(a);
-	  p.vy = v * Math.sin(a);
-	}
-
-	function starCamVelocity(star, camera, timestep) {
-	  if (camera.tilt === 90) {
-	    // Special case, we don't want any numerical errors here even for large timestep.
-	    return 0;
-	  }
-	  var cameraX = 0;
-	  var cameraY = Math.cos(camera.tilt * DEG_2_RAD) * camera.distance;
-	  var cameraZ = Math.sin(camera.tilt * DEG_2_RAD) * camera.distance;
-	  var newStarX = star.x + star.vx * timestep;
-	  var newStarY = star.y + star.vy * timestep;
-	  var oldDist = (0, _utils.dist)(star.x, star.y, 0, cameraX, cameraY, cameraZ);
-	  var newDist = (0, _utils.dist)(newStarX, newStarY, 0, cameraX, cameraY, cameraZ);
-	  return (newDist - oldDist) / timestep;
-	}
-
-	function lightIntensity(star, planet, camera) {
-	  if (occultation(star, planet, camera)) {
-	    return 1 - Math.pow(planet.diameter / 100, 2);
-	  }
-	  return 1;
-	}
-
-	function occultation(star, planet, camera) {
-	  if (Math.abs(camera.tilt) > 0.1) {
-	    return false;
-	  }
-	  if (camera.distance < (0, _utils.distObj)(planet, { x: 0, y: 0 })) {
-	    // Planet is behind the camera.
-	    return false;
-	  }
-	  if (planet.y > 0) {
-	    // Planet is behind the star.
-	    return false;
-	  }
-	  // This assumes that camera position is limited to XZ plane (so Y is always == 0)
-	  // and it always looks at (0, 0, 0) point.
-	  return Math.abs(star.x - planet.x) < _constants.PLANET_RADIUS + _constants.STAR_RADIUS;
-	}
-
-	function planetMass(planet) {
-	  var density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
-	  return density * Math.pow(planet.diameter, 3);
-	}
-
-	function euler(s, p, dt) {
-	  p.x += p.vx * dt * 0.5;
-	  p.y += p.vy * dt * 0.5;
-	  var factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
-	  var ax = p.x * factor;
-	  var ay = p.y * factor;
-	  p.vx += ax * dt;
-	  p.vy += ay * dt;
-	  p.x += p.vx * dt * 0.5;
-	  p.y += p.vy * dt * 0.5;
-	}
-
-	function leapFrog(s, p, dt) {
-	  var factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
-	  var a1x = p.x * factor;
-	  var a1y = p.y * factor;
-	  p.x += p.vx * dt + 0.5 * a1x * dt * dt;
-	  p.y += p.vy * dt + 0.5 * a1y * dt * dt;
-	  factor = G * s.mass / Math.pow(p.x * p.x + p.y * p.y, 1.5);
-	  var a2x = p.x * factor;
-	  var a2y = p.y * factor;
-	  p.vx += 0.5 * (a1x + a2x) * dt;
-	  p.vy += 0.5 * (a1y + a2y) * dt;
-	}
-
-/***/ },
-/* 14 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var SF = exports.SF = 1000; // scale factor, conversion between model unit [AU] and view unit
-
-	var STAR_RADIUS = exports.STAR_RADIUS = 0.16; // [ AU ]
-	var PLANET_RADIUS = exports.PLANET_RADIUS = 0.05; // [ AU ]
-
-	var SOLAR_MASS_KG = 1.99e30; // [ kg ]
-	var EARTH_MASS_KG = 5.97e24; // [ kg ]
-	var SOLAR_MASS = exports.SOLAR_MASS = SOLAR_MASS_KG / EARTH_MASS_KG; // [ earth masses ]
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.tick = tick;
-	exports.calculateOutputs = calculateOutputs;
-
-	var _utils = __webpack_require__(12);
-
-	var _physics = __webpack_require__(13);
-
-	var MAX_TIMESTEP = 0.005;
-
-	function tick(state) {
-	  // Make sure that integration isn't using too big timestep, so it's still reasonably accurate.
-	  var dt = Math.min(MAX_TIMESTEP, state.timestep);
-	  var steps = Math.round(state.timestep / dt);
-	  for (var i = 0; i < steps; i++) {
-	    (0, _physics.updatePlanet)(state.star, state.planet, dt);
-	    state.time += dt;
-	  }
-	  calculateOutputs(state);
-	}
-
-	function calculateOutputs(state) {
-	  // Note that star position and velocity depends strictly on planet, so it's an output in fact.
-	  (0, _physics.updateStar)(state.star, state.planet);
-	  (0, _physics.updateTelescope)(state.telescope, state.star, state.planet, state.camera, state.timestep);
-	}
-
-/***/ },
-/* 16 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _jquery = __webpack_require__(2);
-
-	var _jquery2 = _interopRequireDefault(_jquery);
-
-	var _eventemitter = __webpack_require__(3);
-
-	var _eventemitter2 = _interopRequireDefault(_eventemitter);
-
-	var _star = __webpack_require__(17);
-
-	var _star2 = _interopRequireDefault(_star);
-
-	var _planet = __webpack_require__(18);
-
-	var _planet2 = _interopRequireDefault(_planet);
-
-	var _grid = __webpack_require__(20);
-
-	var _grid2 = _interopRequireDefault(_grid);
-
-	var _breadCrumbs = __webpack_require__(23);
-
-	var _breadCrumbs2 = _interopRequireDefault(_breadCrumbs);
-
-	var _habitationZone = __webpack_require__(24);
-
-	var _habitationZone2 = _interopRequireDefault(_habitationZone);
-
-	var _camera = __webpack_require__(25);
-
-	var _camera2 = _interopRequireDefault(_camera);
-
-	var _interactionsManager = __webpack_require__(26);
-
-	var _interactionsManager2 = _interopRequireDefault(_interactionsManager);
-
-	var _constants = __webpack_require__(14);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	// Let user know that he can change the tilt.
-	var TILT_CURSOR = 'ns-resize';
-
-	var _class = (function () {
-	  function _class(parentEl) {
-	    var _this = this;
-
-	    _classCallCheck(this, _class);
-
-	    this.renderer = webglAvailable() ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
-	    this.renderer.setPixelRatio(window.devicePixelRatio);
-	    parentEl.appendChild(this.renderer.domElement);
-
-	    this._addHTMLDisplay(parentEl);
-
-	    this.camera = new _camera2.default(this.renderer.domElement);
-	    this.camera.onChange(function () {
-	      _this.dispatch.emit('camera.change', _this.camera.getProps());
-	    });
-
-	    this.dispatch = new _eventemitter2.default();
-
-	    this.scene = new THREE.Scene();
-	    this._initScene();
-
-	    this.interactionEnabled = true;
-	    this.interactionsManager = new _interactionsManager2.default(this.renderer.domElement, this.camera);
-	    this._initInteractions();
-
-	    this.resize();
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      this.star.setProps(props.star);
-	      this.habitationZone.setProps(props.habitationZone);
-	      this.planet.setProps(props.planet);
-	      this.camera.setProps(props.camera);
-
-	      this._setupZoomLevel(props.camera.zoom);
-
-	      this._showTilt(props.camera.tiltLocked ? false : props.camera.tilt.toFixed(2));
-	    }
-	  }, {
-	    key: 'addBreadCrumb',
-	    value: function addBreadCrumb(x, y) {
-	      this.breadCrumbs.addBreadCrumb(x, y);
-	    }
-	  }, {
-	    key: 'clearBreadCrumbs',
-	    value: function clearBreadCrumbs() {
-	      this.breadCrumbs.clear();
-	    }
-
-	    // Delegate #on to EventEmitter object.
-
-	  }, {
-	    key: 'on',
-	    value: function on() {
-	      this.dispatch.on.apply(this.dispatch, arguments);
-	    }
-	  }, {
-	    key: 'render',
-	    value: function render() {
-	      this.camera.update();
-	      this.renderer.render(this.scene, this.camera.camera);
-	      if (this.interactionEnabled) {
-	        this.interactionsManager.checkInteraction();
-	      }
-	    }
-
-	    // Resizes canvas to fill its parent.
-
-	  }, {
-	    key: 'resize',
-	    value: function resize() {
-	      var parent = this.renderer.domElement.parentElement;
-	      var newWidth = parent.clientWidth;
-	      var newHeight = parent.clientHeight;
-	      this.renderer.setSize(newWidth, newHeight);
-	      this.camera.setSize(newWidth, newHeight);
-	      this.$display.css('font-size', newHeight / 26 + 'px');
-	    }
-	  }, {
-	    key: '_addHTMLDisplay',
-	    value: function _addHTMLDisplay(parentEl) {
-	      this.$display = (0, _jquery2.default)('<div class="display">The tilt is <span class="tilt-val"></span> degrees</div>');
-	      this.$display.css({
-	        position: 'absolute',
-	        bottom: '5px',
-	        right: '5px',
-	        color: '#fff',
-	        fontFamily: 'Arial',
-	        pointerEvents: 'none'
-	      });
-	      this.$display.appendTo(parentEl);
-	      this.$tiltVal = this.$display.find('.tilt-val');
-	      this.$tiltVal.css({
-	        fontWeight: 'bold'
-	      });
-	    }
-	  }, {
-	    key: '_setCursor',
-	    value: function _setCursor(cursor) {
-	      this.renderer.domElement.style.cursor = cursor || this._mainCursor;
-	    }
-
-	    // If 'tilt' is a number, it shows it at the bottom of the screen.
-	    // If it's false, it hides the display.
-
-	  }, {
-	    key: '_showTilt',
-	    value: function _showTilt(tilt) {
-	      if (!this._tilt && tilt) {
-	        this.$display.show();
-	        this._mainCursor = TILT_CURSOR;
-	        this._setCursor();
-	      } else if (this._tilt && !tilt) {
-	        this.$display.hide();
-	        this._mainCursor = '';
-	        this._setCursor();
-	      }
-	      if (this._tilt !== tilt) {
-	        this.$tiltVal.text(tilt);
-	        this._tilt = tilt;
-	      }
-	    }
-
-	    // Updates grid size and makes certain objects bigger so they are still visible.
-
-	  }, {
-	    key: '_setupZoomLevel',
-	    value: function _setupZoomLevel(zoom) {
-	      var gridSize = gridSizeForZoom(zoom);
-	      this.grid.size = gridSize;
-	    }
-	  }, {
-	    key: '_initScene',
-	    value: function _initScene() {
-	      this.grid = new _grid2.default();
-	      this.star = new _star2.default();
-	      this.habitationZone = new _habitationZone2.default();
-	      this.planet = new _planet2.default();
-	      this.breadCrumbs = new _breadCrumbs2.default();
-	      this.scene.add(this.grid.rootObject);
-	      this.scene.add(this.star.rootObject);
-	      this.scene.add(this.habitationZone.rootObject);
-	      this.scene.add(this.planet.rootObject);
-	      this.scene.add(this.breadCrumbs.rootObject);
-	      this.scene.add(new THREE.AmbientLight(0x202020));
-	    }
-	  }, {
-	    key: '_initInteractions',
-	    value: function _initInteractions() {
-	      var _this2 = this;
-
-	      // Earth dragging.
-	      this.interactionsManager.registerInteraction({
-	        test: function test() {
-	          return _this2.interactionsManager.isUserPointing(_this2.planet.mesh);
-	        },
-	        activationChangeHandler: function activationChangeHandler(isActive) {
-	          _this2.planet.setHighlighted(isActive);
-	          _this2._setCursor(isActive ? 'move' : null);
-	        },
-	        stepHandler: function stepHandler() {
-	          var coords = _this2.interactionsManager.pointerToXYPlane();
-	          _this2.dispatch.emit('planet.change', { x: coords.x / _constants.SF, y: coords.y / _constants.SF });
-	        }
-	      });
-	      // Velocity arrow(head) dragging.
-	      this.interactionsManager.registerInteraction({
-	        test: function test() {
-	          return _this2.interactionsManager.isUserPointing(_this2.planet.velocityArrow.headMesh);
-	        },
-	        activationChangeHandler: function activationChangeHandler(isActive) {
-	          _this2.planet.velocityArrow.setHighlighted(isActive);
-	          _this2._setCursor(isActive ? 'move' : null);
-	        },
-	        stepHandler: function stepHandler() {
-	          var coords = _this2.interactionsManager.pointerToXYPlane();
-	          // Calculate coordinates of new velocity vector in view units.
-	          var vx = coords.x - _this2.planet.position.x;
-	          var vy = coords.y - _this2.planet.position.y;
-	          _this2.dispatch.emit('planet.change', _this2.planet.velocityViewUnit2AU(vx, vy));
-	        }
-	      });
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-	function gridSizeForZoom(zoom) {
-	  if (zoom >= 2) {
-	    return 1;
-	  }
-	  if (zoom >= 0.5) {
-	    return 2;
-	  }
-	  return 5;
-	}
-
-	function webglAvailable() {
-	  try {
-	    var canvas = document.createElement('canvas');
-	    return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-	  } catch (e) {
-	    return false;
-	  }
-	}
-
-/***/ },
-/* 17 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var _class = (function () {
-	  function _class() {
-	    _classCallCheck(this, _class);
-
-	    this.geometry = new THREE.SphereGeometry(_constants.STAR_RADIUS * _constants.SF, 64, 64);
-	    this.material = new THREE.MeshPhongMaterial();
-	    this.mesh = new THREE.Mesh(this.geometry, this.material);
-	    this.posObject = new THREE.Object3D();
-	    this.posObject.add(this.mesh);
-
-	    // Add point light too.
-	    this.posObject.add(new THREE.PointLight(0xffffff, 1, 0));
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      this.position.x = props.x * _constants.SF;
-	      this.position.y = props.y * _constants.SF;
-	      this.material.color.setHex(props.color);
-	      this.material.emissive.setHex(props.color);
-	      this.scale = props.scale;
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.posObject;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.posObject.position;
-	    }
-	  }, {
-	    key: 'scale',
-	    get: function get() {
-	      // We always keep scale.x equal to scale.y and scale.y, take a look at setter.
-	      return this.rootObject.scale.x;
-	    },
-	    set: function set(v) {
-	      this.rootObject.scale.set(v, v, v);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 18 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	var _velocityArrow = __webpack_require__(19);
-
-	var _velocityArrow2 = _interopRequireDefault(_velocityArrow);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var DEF_COLOR = 0x1286CD;
-	var DEF_EMISSIVE = 0x002135;
-	var HIGHLIGHT_COLOR = 0xff0000;
-	var HIGHLIGHT_EMISSIVE = 0xbb3333;
-
-	var _class = (function () {
-	  function _class() {
-	    _classCallCheck(this, _class);
-
-	    var geometry = new THREE.SphereGeometry(_constants.PLANET_RADIUS * _constants.SF, 64, 64);
-	    this.material = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
-	    this.mesh = new THREE.Mesh(geometry, this.material);
-	    this.posObject = new THREE.Object3D();
-	    this.posObject.add(this.mesh);
-
-	    this.velocityArrow = new _velocityArrow2.default();
-	    this.posObject.add(this.velocityArrow.rootObject);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'velocityViewUnit2AU',
-
-	    // Transforms velocity defined in view units into AU (model units).
-	    value: function velocityViewUnit2AU(vx, vy) {
-	      return { vx: vx / _velocityArrow.VELOCITY_LEN_SCALE, vy: vy / _velocityArrow.VELOCITY_LEN_SCALE };
-	    }
-	  }, {
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      this.rootObject.visible = props.diameter > 0;
-	      this.position.x = props.x * _constants.SF;
-	      this.position.y = props.y * _constants.SF;
-	      this.scale = 1 + props.diameter / 50;
-	      this.velocityArrow.setProps(props);
-	    }
-	  }, {
-	    key: 'setHighlighted',
-	    value: function setHighlighted(v) {
-	      this.material.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
-	      this.material.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.posObject;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.posObject.position;
-	    }
-	  }, {
-	    key: 'scale',
-	    get: function get() {
-	      // We always keep scale.x equal to scale.y and scale.y, take a look at setter.
-	      return this.mesh.scale.x;
-	    },
-	    set: function set(v) {
-	      this.mesh.scale.set(v, v, v);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.VELOCITY_LEN_SCALE = undefined;
-
-	var _constants = __webpack_require__(14);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var VELOCITY_LEN_SCALE = exports.VELOCITY_LEN_SCALE = _constants.SF * 0.05;
-	var DEF_COLOR = 0x00ff00;
-	var DEF_EMISSIVE = 0x007700;
-	var HIGHLIGHT_COLOR = 0xff0000;
-	var HIGHLIGHT_EMISSIVE = 0xbb3333;
-
-	var _class = (function () {
-	  function _class() {
-	    _classCallCheck(this, _class);
-
-	    var radius = _constants.PLANET_RADIUS * _constants.SF / 4;
-	    var height = _constants.PLANET_RADIUS * _constants.SF * 4;
-	    var headRadius = radius * 3;
-	    var headHeight = height / 3;
-
-	    // Set height to 1, as it will be scaled later (#setProps).
-	    this.arrowGeometry = new THREE.CylinderGeometry(radius, radius, 1, 8);
-	    this.arrowMaterial = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
-	    this.arrowMesh = new THREE.Mesh(this.arrowGeometry, this.arrowMaterial);
-
-	    this.headGeometry = new THREE.CylinderGeometry(headRadius, 0, headHeight, 16);
-	    this.headMaterial = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
-	    this.headMesh = new THREE.Mesh(this.headGeometry, this.headMaterial);
-
-	    this.pivot = new THREE.Object3D();
-	    this.pivot.add(this.headMesh);
-	    this.pivot.add(this.arrowMesh);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(planet) {
-	      this.pivot.rotation.z = Math.atan2(planet.vx, -planet.vy);
-	      var len = Math.sqrt(planet.vx * planet.vx + planet.vy * planet.vy) * VELOCITY_LEN_SCALE;
-	      this.arrowMesh.scale.y = len;
-	      this.arrowMesh.position.y = -len * 0.5;
-	      this.headMesh.position.y = -len;
-	    }
-	  }, {
-	    key: 'setHighlighted',
-	    value: function setHighlighted(v) {
-	      this.headMaterial.color.setHex(v ? HIGHLIGHT_COLOR : DEF_COLOR);
-	      this.headMaterial.emissive.setHex(v ? HIGHLIGHT_EMISSIVE : DEF_EMISSIVE);
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.pivot;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.pivot.position;
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	var _axis = __webpack_require__(21);
-
-	var _axis2 = _interopRequireDefault(_axis);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var _class = (function () {
-	  function _class() {
-	    var size = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
-	    var steps = arguments.length <= 1 || arguments[1] === undefined ? 8 : arguments[1];
-
-	    _classCallCheck(this, _class);
-
-	    this.initialSize = size;
-
-	    this.geometry = gridGeometry(size, steps);
-	    this.material = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
-	    this.mesh = new THREE.LineSegments(this.geometry, this.material);
-
-	    this.axis = new _axis2.default(size);
-	    this.mesh.add(this.axis.rootObject);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'size',
-	    set: function set(v) {
-	      if (v === this._oldSize) return;
-	      // We could regenerate all the geometry, but it's simpler to use scaling (it will handle all the
-	      // children objects too). In such case, labels won't match size of the grid, so we need to
-	      // update them manually.
-	      v = v / this.initialSize;
-	      this.rootObject.scale.set(v, v, v);
-	      this.axis.setLabelsRange(v);
-	      this._oldSize = v;
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.mesh;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.mesh.position;
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-	function gridGeometry(size, steps) {
-	  var geometry = new THREE.Geometry();
-	  size = size * _constants.SF;
-	  var step = size / steps;
-	  for (var i = -size; i <= size; i += step) {
-	    geometry.vertices.push(new THREE.Vector3(-size, i, 0));
-	    geometry.vertices.push(new THREE.Vector3(size, i, 0));
-	    geometry.vertices.push(new THREE.Vector3(i, -size, 0));
-	    geometry.vertices.push(new THREE.Vector3(i, size, 0));
-	  }
-	  return geometry;
-	}
-
-/***/ },
-/* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	var _label = __webpack_require__(22);
-
-	var _label2 = _interopRequireDefault(_label);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var _class = (function () {
-	  function _class() {
-	    var size = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
-	    var ticks = arguments.length <= 1 || arguments[1] === undefined ? 4 : arguments[1];
-
-	    _classCallCheck(this, _class);
-
-	    this.size = size;
-	    this.ticks = ticks;
-
-	    this.geometry = axisGeometry(size, ticks);
-	    this.material = new THREE.LineBasicMaterial({ color: 0xffffaa, linewidth: 2 });
-	    this.mesh = new THREE.LineSegments(this.geometry, this.material);
-
-	    this.labels = [];
-	    this.setLabelsRange(size);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setLabelsRange',
-	    value: function setLabelsRange(maxValue) {
-	      var _this = this;
-
-	      this.labels.forEach(function (lbl) {
-	        _this.mesh.remove(lbl.rootObject);
-	        lbl.dispose();
-	      });
-	      this.labels = [];
-
-	      for (var i = 1; i <= this.ticks; i++) {
-	        var lbl = new _label2.default((maxValue * i / this.ticks).toFixed(2) + ' AU');
-	        lbl.position.y = this.size * _constants.SF * i / this.ticks;
-	        this.labels.push(lbl);
-	        this.mesh.add(lbl.rootObject);
-	      }
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.mesh;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.mesh.position;
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-	function axisGeometry(size, ticks) {
-	  var geometry = new THREE.Geometry();
-	  var len = size * _constants.SF; // convert AU to view units
-	  var tickWidth = len / 70;
-	  // Main axis.
-	  geometry.vertices.push(new THREE.Vector3(0, 0, 0));
-	  geometry.vertices.push(new THREE.Vector3(0, len, 0));
-	  // Tick marks.
-	  for (var i = 1; i <= ticks; i++) {
-	    geometry.vertices.push(new THREE.Vector3(-tickWidth, len * i / ticks, 0));
-	    geometry.vertices.push(new THREE.Vector3(tickWidth, len * i / ticks, 0));
-	  }
-	  return geometry;
-	}
-
-/***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var _class = (function () {
-	  function _class(text) {
-	    _classCallCheck(this, _class);
-
-	    var size = 0.03 * _constants.SF;
-	    this.geometry = new THREE.TextGeometry(text, {
-	      size: size,
-	      height: 1e-6 * _constants.SF
-	    });
-	    this.material = new THREE.LineBasicMaterial({ color: 0xffffaa });
-	    this.mesh = new THREE.Mesh(this.geometry, this.material);
-	    this.mesh.position.x = size;
-	    this.mesh.position.y = -size * 0.5;
-
-	    this.posObject = new THREE.Object3D();
-	    this.posObject.add(this.mesh);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'dispose',
-	    value: function dispose() {
-	      this.geometry.dispose();
-	      this.material.dispose();
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.posObject;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.posObject.position;
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var COUNT = 250;
-	var VERTEX_SHADER = '\n  attribute float alpha;\n  varying float vAlpha;\n  void main() {\n    vAlpha = alpha;\n    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);\n    gl_PointSize = 3.5;\n    gl_Position = projectionMatrix * mvPosition;\n  }';
-	var FRAGMENT_SHADER = '\n  uniform vec3 color;\n  varying float vAlpha;\n  void main() {\n    gl_FragColor = vec4(color, vAlpha);\n  }';
-
-	var _class = (function () {
-	  function _class() {
-	    _classCallCheck(this, _class);
-
-	    this.geometry = new THREE.BufferGeometry();
-	    this.geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(COUNT * 3), 3));
-	    this.geometry.addAttribute('alpha', new THREE.BufferAttribute(new Float32Array(COUNT), 1));
-	    this.material = new THREE.ShaderMaterial({
-	      uniforms: {
-	        color: { type: 'c', value: new THREE.Color(0xdddddd) }
-	      },
-	      vertexShader: VERTEX_SHADER,
-	      fragmentShader: FRAGMENT_SHADER,
-	      transparent: true
-	    });
-	    this.points = new THREE.Points(this.geometry, this.material);
-
-	    this.count = 0;
-	    this.idx = 0;
-	  }
-
-	  _createClass(_class, [{
-	    key: 'addBreadCrumb',
-	    value: function addBreadCrumb(x, y) {
-	      var vertices = this.points.geometry.attributes.position;
-	      vertices.array[this.idx * 3] = x * _constants.SF;
-	      vertices.array[this.idx * 3 + 1] = y * _constants.SF;
-	      vertices.needsUpdate = true;
-
-	      var alphas = this.points.geometry.attributes.alpha;
-	      for (var i = 0; i < this.count; i++) {
-	        var idx = this.idx - i >= 0 ? this.idx - i : this.idx - i + COUNT;
-	        alphas.array[idx] = 1 - i / COUNT;
-	      }
-	      alphas.needsUpdate = true;
-
-	      this.count = Math.min(COUNT, this.count + 1);
-	      this.idx = (this.idx + 1) % COUNT;
-	    }
-	  }, {
-	    key: 'clear',
-	    value: function clear() {
-	      if (this.count === 0) return;
-	      // Set all alphas to 0.
-	      var alphas = this.points.geometry.attributes.alpha;
-	      for (var i = 0; i < this.count; i++) {
-	        var idx = this.idx - i >= 0 ? this.idx - i : this.idx - i + COUNT;
-	        alphas.array[idx] = 0;
-	      }
-	      alphas.needsUpdate = true;
-	      this.count = 0;
-	      this.idx = 0;
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.points;
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.points.position;
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var _class = (function () {
-	  function _class() {
-	    _classCallCheck(this, _class);
-
-	    this.outerGeometry = new THREE.RingGeometry(0, 1, 64);
-	    this.outerMaterial = new THREE.MeshBasicMaterial({ color: 0x3DB5FF, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
-	    this.outerMesh = new THREE.Mesh(this.outerGeometry, this.outerMaterial);
-	    // Set ring a bit above 0 (=> above grid and axis).
-	    this.outerMesh.position.z = 0.004 * _constants.SF;
-
-	    this.innerGeometry = new THREE.RingGeometry(0, 1, 64);
-	    this.innerMaterial = new THREE.MeshBasicMaterial({ color: 0x00000, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
-	    this.innerMesh = new THREE.Mesh(this.innerGeometry, this.innerMaterial);
-	    this.innerMesh.position.z = 0.005 * _constants.SF;
-
-	    this.posObject = new THREE.Object3D();
-	    this.posObject.add(this.outerMesh);
-	    this.posObject.add(this.innerMesh);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      this.rootObject.visible = props.visible;
-	      this.innerRadius = props.innerRadius;
-	      this.outerRadius = props.outerRadius;
-	    }
-	  }, {
-	    key: 'rootObject',
-	    get: function get() {
-	      return this.posObject;
-	    }
-	  }, {
-	    key: 'innerRadius',
-	    set: function set(v) {
-	      v = v * _constants.SF;
-	      this.innerMesh.scale.set(v, v, v);
-	    }
-	  }, {
-	    key: 'outerRadius',
-	    set: function set(v) {
-	      v = v * _constants.SF;
-	      this.outerMesh.scale.set(v, v, v);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _constants = __webpack_require__(14);
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var ROTATION_AXIS = new THREE.Vector3(1, 0, 0);
-	var ZERO_TILT_VEC = new THREE.Vector3(0, -1, 0);
-	var ZOOM_SPEED = 1.013;
-	var ZOOM_MIN = 0.25;
-	var ZOOM_MAX = 15;
-
-	var _class = (function () {
-	  function _class(canvas) {
-	    _classCallCheck(this, _class);
-
-	    this.camera = new THREE.PerspectiveCamera(15, 1, 0.1 * _constants.SF, 1000 * _constants.SF);
-	    this.position.z = 2.5 * _constants.SF;
-
-	    this.controls = new THREE.OrbitControls(this.camera, canvas);
-	    this.controls.enablePan = false;
-	    this.controls.minPolarAngle = Math.PI * 0.5;
-	    this.controls.maxPolarAngle = Math.PI;
-	    this.controls.minAzimuthAngle = 0;
-	    this.controls.maxAzimuthAngle = 0;
-	    this.controls.rotateSpeed = 0.5;
-
-	    this.changeCallback = function () {/* noop */};
-
-	    // Use custom zooming which changes camera lens instead of camera position.
-	    this.controls.enableZoom = false;
-	    this.zoomLocked = false;
-	    canvas.addEventListener('mousewheel', this._onMouseWheel.bind(this), false);
-	    canvas.addEventListener('MozMousePixelScroll', this._onMouseWheel.bind(this), false);
-	  }
-
-	  _createClass(_class, [{
-	    key: 'onChange',
-
-	    // On change caused by user interaction.
-	    value: function onChange(callback) {
-	      this.changeCallback = callback;
-	      this.controls.addEventListener('change', callback);
-	    }
-	  }, {
-	    key: 'setProps',
-	    value: function setProps(props) {
-	      this.tilt = props.tilt;
-	      this.tiltLocked = props.tiltLocked;
-	      this.zoom = props.zoom;
-	      this.distance = props.distance;
-	    }
-	  }, {
-	    key: 'getProps',
-	    value: function getProps() {
-	      var self = this;
-	      return {
-	        tilt: self.tilt,
-	        tiltLocked: self.tiltLocked,
-	        distance: self.distance,
-	        zoom: self.zoom
-	      };
-	    }
-	  }, {
-	    key: 'setSize',
-	    value: function setSize(newWidth, newHeight) {
-	      this.camera.aspect = newWidth / newHeight;
-	      this.camera.updateProjectionMatrix();
-	    }
-	  }, {
-	    key: 'update',
-	    value: function update() {
-	      this.controls.update();
-	    }
-	  }, {
-	    key: 'zoomIn',
-	    value: function zoomIn() {
-	      this.camera.zoom = Math.min(ZOOM_MAX, this.camera.zoom * ZOOM_SPEED);
-	      this.camera.updateProjectionMatrix();
-	      this.changeCallback();
-	    }
-	  }, {
-	    key: 'zoomOut',
-	    value: function zoomOut() {
-	      this.camera.zoom = Math.max(ZOOM_MIN, this.camera.zoom / ZOOM_SPEED);
-	      this.camera.updateProjectionMatrix();
-	      this.changeCallback();
-	    }
-	  }, {
-	    key: '_onMouseWheel',
-	    value: function _onMouseWheel(event) {
-	      if (this.zoomLocked) return;
-	      event.preventDefault();
-	      event.stopPropagation();
-	      var delta = 0;
-	      if (event.wheelDelta !== undefined) {
-	        // WebKit / Opera / Explorer 9
-	        delta = event.wheelDelta;
-	      } else if (event.detail !== undefined) {
-	        // Firefox
-	        delta = -event.detail;
-	      }
-	      if (delta > 0) {
-	        this.zoomIn();
-	      } else if (delta < 0) {
-	        this.zoomOut();
-	      }
-	    }
-	  }, {
-	    key: 'position',
-	    get: function get() {
-	      return this.camera.position;
-	    }
-	  }, {
-	    key: 'tiltLocked',
-	    set: function set(v) {
-	      this._tiltLocked = v;
-	      this.controls.enableRotate = !v;
-	    },
-	    get: function get() {
-	      // We can't return !this.controls.enableRotate, as this value is also modified by #lockedForInteraction!
-	      return this._tiltLocked;
-	    }
-
-	    // It *temporarily* locks tilt and zoom change.
-
-	  }, {
-	    key: 'lockedForInteraction',
-	    set: function set(v) {
-	      // We can't use #tiltLocked, as we want to preserver value of this property. This is only temporal lock.
-	      this.controls.enableRotate = v ? false : !this._tiltLocked;
-	      this.zoomLocked = v;
-	    }
-	  }, {
-	    key: 'tilt',
-	    set: function set(v) {
-	      if (v === this._tilt) return;
-	      this._tilt = v;
-	      var angleDiff = this.position.angleTo(ZERO_TILT_VEC);
-	      var tiltInRad = v * Math.PI / 180;
-	      this.position.applyAxisAngle(ROTATION_AXIS, angleDiff - tiltInRad);
-	      this.controls.update();
-	    },
-	    get: function get() {
-	      return this.position.angleTo(ZERO_TILT_VEC) * 180 / Math.PI;
-	    }
-	  }, {
-	    key: 'distance',
-	    set: function set(v) {
-	      if (v === this._distance) return;
-	      this._distance = v;
-	      this.position.setLength(v * _constants.SF);
-	    },
-	    get: function get() {
-	      return this.position.length() / _constants.SF;
-	    }
-	  }, {
-	    key: 'zoom',
-	    set: function set(v) {
-	      if (v === this.camera.zoom) return;
-	      this.camera.zoom = v;
-	      this.camera.updateProjectionMatrix();
-	    },
-	    get: function get() {
-	      return this.camera.zoom;
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-/***/ },
-/* 26 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _jquery = __webpack_require__(2);
-
-	var _jquery2 = _interopRequireDefault(_jquery);
-
-	var _utils = __webpack_require__(30);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var _class = (function () {
-	  function _class(domElement, camera) {
-	    _classCallCheck(this, _class);
-
-	    this.domElement = domElement;
-	    this.camera = camera; // instance of view-models/camera, not THREE.Camera!
-
-	    this.raycaster = new THREE.Raycaster();
-	    this.mouse = new THREE.Vector2(-2, -2); // intentionally out of view, which is limited to [-1, 1] x [-1, 1]
-	    this._followMousePosition();
-
-	    this._interactions = [];
-	  }
-
-	  _createClass(_class, [{
-	    key: 'registerInteraction',
-	    value: function registerInteraction(int) {
-	      this._interactions.push(int);
-	    }
-	  }, {
-	    key: 'checkInteraction',
-	    value: function checkInteraction() {
-	      this.raycaster.setFromCamera(this.mouse, this.camera.camera);
-
-	      for (var i = 0; i < this._interactions.length; i++) {
-	        var int = this._interactions[i];
-	        if (int._started) {
-	          int.stepHandler();
-	          return;
-	        }
-	      }
-
-	      var anyInteractionActive = false;
-	      for (var i = 0; i < this._interactions.length; i++) {
-	        var int = this._interactions[i];
-	        if (!anyInteractionActive && int.test()) {
-	          this._setInteractionActive(int, i, true);
-	          anyInteractionActive = true;
-	        } else {
-	          if (int._active) {
-	            this._setInteractionActive(int, i, false);
-	          }
-	        }
-	      }
-
-	      if (anyInteractionActive) {
-	        this.camera.lockedForInteraction = true;
-	      } else {
-	        this.camera.lockedForInteraction = false;
-	      }
-	    }
-	  }, {
-	    key: 'isUserPointing',
-	    value: function isUserPointing(mesh) {
-	      this.raycaster.setFromCamera(this.mouse, this.camera.camera);
-	      var intersects = this.raycaster.intersectObject(mesh);
-	      if (intersects.length > 0) {
-	        return intersects;
-	      } else {
-	        return false;
-	      }
-	    }
-	  }, {
-	    key: 'pointerToXYPlane',
-	    value: function pointerToXYPlane() {
-	      var v = new THREE.Vector3(this.mouse.x, this.mouse.y, 0.5);
-	      v.unproject(this.camera.camera);
-	      v.sub(this.camera.position);
-	      v.normalize();
-	      var distance = -this.camera.position.z / v.z;
-	      v.multiplyScalar(distance);
-	      var result = this.camera.position.clone();
-	      result.add(v);
-	      return result;
-	    }
-	  }, {
-	    key: '_setInteractionActive',
-	    value: function _setInteractionActive(int, idx, v) {
-	      int._active = v;
-	      int.activationChangeHandler(v);
-	      var $elem = (0, _jquery2.default)(this.domElement);
-	      var namespace = 'interaction-' + idx;
-	      if (v) {
-	        $elem.on('mousedown.' + namespace + ' touchstart.' + namespace, function () {
-	          int._started = true;
-	        });
-	        $elem.on('mouseup.' + namespace + ' touchend.' + namespace + ' touchcancel.' + namespace, function () {
-	          int._started = false;
-	        });
-	      } else {
-	        $elem.off('.' + namespace);
-	      }
-	    }
-	  }, {
-	    key: '_followMousePosition',
-	    value: function _followMousePosition() {
-	      var _this = this;
-
-	      var onMouseMove = function onMouseMove(event) {
-	        var pos = mousePosNormalized(event, _this.domElement);
-	        _this.mouse.x = pos.x;
-	        _this.mouse.y = pos.y;
-	      };
-	      (0, _jquery2.default)(this.domElement).on('mousemove touchmove', onMouseMove);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	// Normalized mouse position [-1, 1].
-
-	exports.default = _class;
-	function mousePosNormalized(event, targetElement) {
-	  var pos = (0, _utils.mousePos)(event, targetElement);
-	  var $targetElement = (0, _jquery2.default)(targetElement);
-	  var parentWidth = $targetElement.width();
-	  var parentHeight = $targetElement.height();
-	  pos.x = pos.x / parentWidth * 2 - 1;
-	  pos.y = -(pos.y / parentHeight) * 2 + 1;
-	  return pos;
-	}
-
-/***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _physics = __webpack_require__(13);
-
-	var _utils = __webpack_require__(12);
-
-	var _constants = __webpack_require__(14);
-
-	exports.default = {
-	  // === PLANETS ===
-	  'NoPlanet': {
-	    planet: {
-	      diameter: 0
-	    }
-	  },
-	  'Earth': {
-	    planet: {
-	      x: 1 / Math.sqrt(2),
-	      y: 1 / Math.sqrt(2),
-	      diameter: 1,
-	      rocky: true
-	    },
-	    camera: {
-	      zoom: 1
-	    }
-	  },
-	  'Mars': {
-	    planet: {
-	      x: 1.5 / Math.sqrt(2),
-	      y: 1.5 / Math.sqrt(2),
-	      // The diameter sets the mass, so this reverses the process,
-	      // computing the diameter that would get .107 earth masses.
-	      diameter: Math.pow(0.107, 0.3333),
-	      rocky: true
-	    },
-	    camera: {
-	      zoom: 0.75
-	    }
-	  },
-	  'Jupiter': {
-	    planet: {
-	      x: 5.2 / Math.sqrt(2),
-	      y: 5.2 / Math.sqrt(2),
-	      // The diameter sets the mass, so this reverses the process.
-	      diameter: Math.pow(4.13 * 10.5, 0.3333),
-	      rocky: false
-	    },
-	    camera: {
-	      zoom: 0.25
-	    }
-	  },
-	  'Venus': {
-	    planet: {
-	      x: 0.728 / Math.sqrt(2),
-	      y: 0.728 / Math.sqrt(2),
-	      // The diameter sets the mass, so this reverses the process.
-	      diameter: Math.pow(0.815, 0.3333),
-	      rocky: true
-	    },
-	    camera: {
-	      zoom: 1.5
-	    }
-	  },
-	  'MercuryDiameter10x': { // Like Mercury but 10x larger diameter
-	    planet: {
-	      x: 0.467 / Math.sqrt(2),
-	      y: 0.467 / Math.sqrt(2),
-	      // The diameter sets the mass, so this reverses the process.
-	      diameter: Math.pow(55, 0.3333),
-	      rocky: true
-	    },
-	    camera: {
-	      zoom: 2
-	    }
-	  },
-	  'EarthDiameter10x': { // Like Earth but 10x larger diameter
-	    planet: {
-	      x: 1 / Math.sqrt(2),
-	      y: 1 / Math.sqrt(2),
-	      diameter: 10,
-	      rocky: true
-	    },
-	    camera: {
-	      zoom: 1
-	    }
-	  },
-	  'EarthNearTheStar': { // Earth-like planet near the star
-	    planet: {
-	      x: 0.25 / Math.sqrt(2),
-	      y: 0.25 / Math.sqrt(2),
-	      diameter: 1,
-	      rocky: true
-	    },
-	    camera: {
-	      zoom: 2.5
-	    }
-	  },
-	  'LargeNearTheStar': { // Large rocky planet very near the star
-	    planet: {
-	      x: 0.25 / Math.sqrt(2),
-	      y: 0.25 / Math.sqrt(2),
-	      diameter: 50,
-	      rocky: true
-	    },
-	    camera: {
-	      zoom: 2.5
-	    }
-	  },
-	  // === STARS ===
-	  'StarRed': { // M - red (temp 3120 K)
-	    planet: {},
-	    star: {
-	      mass: 0.21 * _constants.SOLAR_MASS,
-	      color: 0xFF0000,
-	      scale: 0.32,
-	      type: 'M'
-	    },
-	    habitationZone: {
-	      innerRadius: 0.08,
-	      outerRadius: 0.12
-	    },
-	    camera: {
-	      zoom: 1
-	    }
-	  },
-	  'StarOrange': { // K - orange (temp 4640 K)
-	    star: {
-	      mass: 0.69 * _constants.SOLAR_MASS,
-	      color: 0xFFA500,
-	      scale: 0.74,
-	      type: 'K'
-	    },
-	    habitationZone: {
-	      innerRadius: 0.38,
-	      outerRadius: 0.55
-	    },
-	    camera: {
-	      zoom: 1
-	    }
-	  },
-	  'Sun': { // G - yellow (temp 5920 K) -> our Sun
-	    star: {
-	      mass: _constants.SOLAR_MASS,
-	      color: 0xFFFF00,
-	      scale: 1,
-	      type: 'G'
-	    },
-	    habitationZone: {
-	      innerRadius: 0.95,
-	      outerRadius: 1.37
-	    },
-	    camera: {
-	      zoom: 1
-	    }
-	  },
-	  'StarWhite': { // F - white (temp 7240 K)
-	    star: {
-	      mass: 1.29 * _constants.SOLAR_MASS,
-	      color: 0xFFFFFF,
-	      scale: 1.2,
-	      type: 'F'
-	    },
-	    habitationZone: {
-	      innerRadius: 1.5,
-	      outerRadius: 2.17
-	    },
-	    camera: {
-	      zoom: 0.48
-	    }
-	  },
-	  'StarBlue': { // A - blue (temp 8620 K)
-	    star: {
-	      mass: 2.1 * _constants.SOLAR_MASS,
-	      color: 0x00FFFF,
-	      scale: 1.7,
-	      type: 'A'
-	    },
-	    habitationZone: {
-	      innerRadius: 4.26,
-	      outerRadius: 6.14
-	    },
-	    camera: {
-	      zoom: 0.25
-	    }
-	  }
-	};
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.default = analyzeHabitability;
-
-	var _utils = __webpack_require__(12);
-
-	var _physics = __webpack_require__(13);
-
-	var MARS_MASS = 0.107; // of Earth mass
-	var ANALYZE_TIMESTEP = 0.001;
-	var MAX_STEPS = 10000000;
-
-	function analyzeHabitability(star, planet, habitationZone) {
-	  var orbit = calcOrbit(star, planet, habitationZone.innerRadius, habitationZone.outerRadius);
-	  return {
-	    starType: star.type !== 'A' && star.type !== 'M',
-	    planetType: planet.rocky,
-	    planetSize: planet.diameter > Math.pow(4 * MARS_MASS, 0.3333),
-	    orbitalDistance: orbit.minDist > habitationZone.innerRadius && orbit.maxDist < habitationZone.outerRadius
-	  };
-	}
-
-	function calcOrbit(star, planet, allowedMin, allowedMax) {
-	  // Copy star, so we don't modify the provided object!
-	  planet = (0, _utils.deepExtend)({}, planet);
-	  var orbitReady = false;
-	  var prevDist = null;
-	  var trends = [];
-	  var orbit = {
-	    maxDist: -Infinity,
-	    minDist: Infinity
-	  };
-	  var step = 0;
-
-	  while (!orbitReady && step < MAX_STEPS) {
-	    var dist = distance(planet.x, planet.y);
-	    orbit.maxDist = Math.max(dist, orbit.maxDist);
-	    orbit.minDist = Math.min(dist, orbit.minDist);
-
-	    if (prevDist !== null) {
-	      if (dist > prevDist && trends[0] !== '+') {
-	        trends.unshift('+');
-	      } else if (dist < prevDist && trends[0] !== '-') {
-	        trends.unshift('-');
-	      }
-	      // Possible cases: ['+', '-', '+'] or ['-', '+', '-']
-	      // When we have observed three different trends (planet moving towards or away from star),
-	      // it means that the planed have done the full orbit around the star.
-	      if (trends.length >= 3) {
-	        orbitReady = true;
-	      }
-	      // Don't continue calculation if orbit doesn't fit into the allowed range.
-	      if (orbit.maxDist > allowedMax || orbit.minDist < allowedMin) {
-	        orbitReady = true;
-	      }
-	    }
-	    prevDist = dist;
-	    step += 1;
-	    (0, _physics.updatePlanet)(star, planet, ANALYZE_TIMESTEP);
-	  }
-
-	  return orbit;
-	}
-
-	function distance(x, y) {
-	  return Math.sqrt(x * x + y * y);
-	}
-
-/***/ },
-/* 29 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	exports.default = function (app) {
-	  var phone = _iframePhone2.default.getIFrameEndpoint();
-	  var propertiesUpdateComingFromLab = false;
-
-	  app.on('play', function () {
-	    phone.post('play.iframe-model');
-	  });
-	  app.on('stop', function () {
-	    phone.post('stop.iframe-model');
-	  });
-	  app.on('tick', function (newState) {
-	    phone.post('tick', { outputs: getLabStdOutputs(newState) });
-	  });
-	  app.on('state.change', function (newState) {
-	    if (!propertiesUpdateComingFromLab) {
-	      phone.post('properties', getLabProperties(newState));
-	    }
-	    phone.post('outputs', getLabStdOutputs(newState));
-	    // Reset habitability output too, it may require a new analysis.
-	    phone.post('outputs', getHabitabilityOutputs(null));
-	  });
-
-	  phone.addListener('play', function () {
-	    app.play();
-	  });
-	  phone.addListener('stop', function () {
-	    app.stop();
-	  });
-	  phone.addListener('set', function (content) {
-	    // 'set' {name: 'planet.x', value: 1} => app.state.planet.x = content.value
-	    var names = content.name.split('.');
-	    var stateObj = {};
-	    var state = stateObj;
-	    while (names.length > 1) {
-	      state = state[names.shift()] = {};
-	    }
-	    state[names[0]] = content.value;
-
-	    propertiesUpdateComingFromLab = true;
-	    app.setState(stateObj);
-	    propertiesUpdateComingFromLab = false;
-	  });
-	  phone.addListener('makeCircularOrbit', function () {
-	    app.makeCircularOrbit();
-	  });
-	  phone.addListener('loadPreset', function (name) {
-	    app.loadPreset(name);
-	  });
-	  phone.addListener('analyzeHabitability', function () {
-	    phone.post('outputs', getHabitabilityOutputs(app.analyzeHabitability()));
-	  });
-
-	  phone.initialize();
-
-	  phone.post('outputs', getLabStdOutputs(app.state));
-	};
-
-	var _utils = __webpack_require__(12);
-
-	var _iframePhone = __webpack_require__(6);
-
-	var _iframePhone2 = _interopRequireDefault(_iframePhone);
-
-	var _physics = __webpack_require__(13);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
-	var LAB_OUTPUTS = ['time', 'planet.mass', 'camera.tilt', 'telescope.starCamVelocity', 'telescope.lightIntensity'];
-
-	// Note that planet hunting keeps both outputs and state variables together.
-	// Lab expects them to be divided.
-	function getLabProperties(state) {
-	  var props = flattenObject(state);
-	  var _iteratorNormalCompletion = true;
-	  var _didIteratorError = false;
-	  var _iteratorError = undefined;
-
-	  try {
-	    for (var _iterator = LAB_OUTPUTS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	      var output = _step.value;
-
-	      delete props[output];
-	    }
-	  } catch (err) {
-	    _didIteratorError = true;
-	    _iteratorError = err;
-	  } finally {
-	    try {
-	      if (!_iteratorNormalCompletion && _iterator.return) {
-	        _iterator.return();
-	      }
-	    } finally {
-	      if (_didIteratorError) {
-	        throw _iteratorError;
-	      }
-	    }
-	  }
-
-	  return props;
-	}
-
-	function getLabStdOutputs(state) {
-	  var outputs = {};
-	  outputs['time'] = state.time;
-	  outputs['planet.mass'] = (0, _physics.planetMass)(state.planet);
-	  outputs['camera.tilt'] = state.camera.tilt;
-	  outputs['telescope.starCamVelocity'] = state.telescope.starCamVelocity;
-	  outputs['telescope.lightIntensity'] = state.telescope.lightIntensity;
-	  return outputs;
-	}
-
-	function getHabitabilityOutputs(results) {
-	  return {
-	    'habitability.starType': results ? results.starType : null,
-	    'habitability.planetType': results ? results.planetType : null,
-	    'habitability.planetSize': results ? results.planetSize : null,
-	    'habitability.orbitalDistance': results ? results.orbitalDistance : null
-	  };
-	}
-
-	// Flattens state, as Lab doesn't support nested properties.
-	// E.g. {timestep: 1, planet: {x: 1, y: 2}} => {'timestep': 1, 'planet.x': 1, 'planet.y': 2}
-	function flattenObject(value) {
-	  var prefix = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
-	  var result = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-	  if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object' || Array.isArray(value) || value === null) {
-	    // Simple value like number, string or array.
-	    result[prefix] = value;
-	    return;
-	  }
-	  Object.keys(value).forEach(function (key) {
-	    flattenObject(value[key], prefix ? prefix + '.' + key : key, result);
-	  });
-	  return result;
-	}
-
-/***/ },
+/* 11 */,
+/* 12 */,
+/* 13 */,
+/* 14 */,
+/* 15 */,
+/* 16 */,
+/* 17 */,
+/* 18 */,
+/* 19 */,
+/* 20 */,
+/* 21 */,
+/* 22 */,
+/* 23 */,
+/* 24 */,
+/* 25 */,
+/* 26 */,
+/* 27 */,
+/* 28 */,
+/* 29 */,
 /* 30 */
 /***/ function(module, exports, __webpack_require__) {
 

@@ -1,13 +1,15 @@
 import $ from 'jquery';
 import EventEmitter from 'eventemitter2';
 import View from './view.js';
+import {distObj} from '../common/utils.js';
 
-const TICK_INTERVAL = 20;
+const NOTIFY_TICK_INTERVAL = 10;
+const TIMESTEP = 0.001;
 
 const DEF_STATE = {
   time: 0,
   planet: {
-    x: -4,
+    x: -6,
     y: 0,
     diameter: 1
   },
@@ -22,7 +24,7 @@ const DEF_STATE = {
 export default class {
   constructor(parentEl) {
     this.state = $.extend(true, {}, DEF_STATE);
-    this.calculateOutput();
+    this.calculateOutputs();
 
     this.view = new View(parentEl);
     this.view.on('planet.change', (planetState) => {
@@ -39,8 +41,8 @@ export default class {
     this._rafCallback();
   }
 
-  calculateOutput() {
-    this.state.lightIntensity = Math.random();
+  calculateOutputs() {
+    this.state.lightIntensity = lightIntensity(this.state.star, this.state.planet);
   }
 
   on() {
@@ -68,13 +70,26 @@ export default class {
 
   _rafCallback() {
     if (this.isPlaying) {
-      engine.tick(this.state);
       this.tick += 1;
-      if (this.tick % TICK_INTERVAL === 0) {
+      this.state.time += TIMESTEP;
+      if (this.tick % NOTIFY_TICK_INTERVAL === 0) {
+        this.calculateOutputs();
         this.dispatch.emit('tick', this.state);
       }
     }
     this.view.render(this.state.star, this.state.planet);
     this._rafID = requestAnimationFrame(this._rafCallback);
   }
+}
+
+function lightIntensity(star, planet) {
+  let planetR = planet.diameter * 0.5;
+  let starR = star.diameter * 0.5;
+  let planetArea = Math.PI * planetR * planetR;
+  let starArea = Math.PI * starR * starR;
+  let d = distObj(star, planet);
+  let biggerR = Math.max(star.diameter, planet.diameter) * 0.5;
+  let smallerR = Math.min(star.diameter, planet.diameter) * 0.5;
+  let ratio = Math.max(0, Math.min(1, 1 - (d - (biggerR - smallerR)) / (2 * smallerR)));
+  return 1 - ratio * Math.min(1, planetArea / starArea);
 }

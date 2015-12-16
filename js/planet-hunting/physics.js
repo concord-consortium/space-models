@@ -1,3 +1,4 @@
+import {dist, distObj} from '../common/utils.js';
 import {PLANET_RADIUS, STAR_RADIUS, SOLAR_MASS} from './constants.js';
 
 const DEG_2_RAD = Math.PI / 180;
@@ -88,15 +89,6 @@ export function occultation(star, planet, camera) {
 export function planetMass(planet) {
   let density = planet.rocky ? ROCKY_PLANET_DENSITY : GAS_PLANET_DENSITY;
   return density * Math.pow(planet.diameter, 3);
-}
-
-function dist(x1, y1, z1, x2, y2, z2) {
-  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
-}
-
-function distObj(a, b) {
-  // Planet and star objects don't specify Z coord, as it's always equal to 0.
-  return dist(a.x, a.y, a.z || 0, b.x, b.y, b.z || 0);
 }
 
 function euler(s, p, dt) {

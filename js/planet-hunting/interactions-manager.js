@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import {mousePos} from '../common/utils.js';
 
 export default class {
   constructor(domElement, camera) {
@@ -94,14 +95,6 @@ export default class {
     };
     $(this.domElement).on('mousemove touchmove', onMouseMove);
   }
-}
-
-// Mouse position in pixels.
-function mousePos(event, targetElement) {
-  let $targetElement = $(targetElement);
-  let parentX = $targetElement.offset().left;
-  let parentY = $targetElement.offset().top;
-  return {x: event.pageX - parentX, y: event.pageY - parentY};
 }
 
 // Normalized mouse position [-1, 1].
