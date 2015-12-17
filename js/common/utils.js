@@ -18,3 +18,28 @@ export function mousePos(event, targetElement) {
   }
   return {x: event.pageX - parentX, y: event.pageY - parentY};
 }
+
+// Mouse (or touch) position in pixels, but it takes into account
+// device pixel ratio (e.g. Retina display).
+export function mousePosHD(evt, target) {
+  let p = mousePos(evt, target);
+  p.x *= window.devicePixelRatio;
+  p.y *= window.devicePixelRatio;
+  return p;
+}
+
+export function stdAppInitialization(App, labIntegration, containerID = 'app') {
+  let container = document.getElementById(containerID);
+
+  window.app = new App(container);
+  labIntegration(window.app);
+
+  window.onresize = resizeAppToWindow;
+  resizeAppToWindow();
+
+  function resizeAppToWindow() {
+    container.style.width = window.innerWidth + "px";
+    container.style.height = window.innerHeight + "px";
+    window.app.resize();
+  }
+}

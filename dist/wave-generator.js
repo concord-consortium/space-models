@@ -46,11 +46,11 @@
 
 	'use strict';
 
-	var _app = __webpack_require__(1);
+	var _app = __webpack_require__(32);
 
 	var _app2 = _interopRequireDefault(_app);
 
-	var _labIntegration = __webpack_require__(7);
+	var _labIntegration = __webpack_require__(34);
 
 	var _labIntegration2 = _interopRequireDefault(_labIntegration);
 
@@ -61,144 +61,7 @@
 	(0, _utils.stdAppInitialization)(_app2.default, _labIntegration2.default);
 
 /***/ },
-/* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _jquery = __webpack_require__(2);
-
-	var _jquery2 = _interopRequireDefault(_jquery);
-
-	var _eventemitter = __webpack_require__(3);
-
-	var _eventemitter2 = _interopRequireDefault(_eventemitter);
-
-	var _view = __webpack_require__(4);
-
-	var _view2 = _interopRequireDefault(_view);
-
-	var _utils = __webpack_require__(6);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var NOTIFY_TICK_INTERVAL = 10;
-	var TIMESTEP = 0.001;
-
-	var DEF_STATE = {
-	  time: 0,
-	  planet: {
-	    x: -6,
-	    y: 0,
-	    diameter: 1
-	  },
-	  star: {
-	    x: 0,
-	    y: 0,
-	    diameter: 6
-	  },
-	  lightIntensity: 'output' // [0, 1]
-	};
-
-	var _class = (function () {
-	  function _class(parentEl) {
-	    var _this = this;
-
-	    _classCallCheck(this, _class);
-
-	    this.state = _jquery2.default.extend(true, {}, DEF_STATE);
-	    this.calculateOutputs();
-
-	    this.view = new _view2.default(parentEl);
-	    this.view.on('planet.change', function (planetState) {
-	      _this.state.planet.x = planetState.x;
-	      _this.state.planet.y = planetState.y;
-	    });
-
-	    this.tick = 0;
-	    this.isPlaying = false;
-
-	    this.dispatch = new _eventemitter2.default();
-
-	    this._rafCallback = this._rafCallback.bind(this);
-	    this._rafCallback();
-	  }
-
-	  _createClass(_class, [{
-	    key: 'calculateOutputs',
-	    value: function calculateOutputs() {
-	      this.state.lightIntensity = lightIntensity(this.state.star, this.state.planet);
-	    }
-	  }, {
-	    key: 'on',
-	    value: function on() {
-	      // Delegate #on to EventEmitter object.
-	      this.dispatch.on.apply(this.dispatch, arguments);
-	    }
-	  }, {
-	    key: 'play',
-	    value: function play() {
-	      this.isPlaying = true;
-	      this.dispatch.emit('play');
-	    }
-	  }, {
-	    key: 'stop',
-	    value: function stop() {
-	      this.isPlaying = false;
-	      this.dispatch.emit('stop');
-	    }
-	  }, {
-	    key: 'resize',
-	    value: function resize() {
-	      this.view.resize();
-	    }
-	  }, {
-	    key: 'setState',
-	    value: function setState(newState) {
-	      deepExtend(this.state, newState);
-	    }
-	  }, {
-	    key: '_rafCallback',
-	    value: function _rafCallback() {
-	      if (this.isPlaying) {
-	        this.tick += 1;
-	        this.state.time += TIMESTEP;
-	        if (this.tick % NOTIFY_TICK_INTERVAL === 0) {
-	          this.calculateOutputs();
-	          this.dispatch.emit('tick', this.state);
-	        }
-	      }
-	      this.view.render(this.state.star, this.state.planet);
-	      this._rafID = requestAnimationFrame(this._rafCallback);
-	    }
-	  }]);
-
-	  return _class;
-	})();
-
-	exports.default = _class;
-
-	function lightIntensity(star, planet) {
-	  var planetR = planet.diameter * 0.5;
-	  var starR = star.diameter * 0.5;
-	  var planetArea = Math.PI * planetR * planetR;
-	  var starArea = Math.PI * starR * starR;
-	  var d = (0, _utils.distObj)(star, planet);
-	  var biggerR = Math.max(star.diameter, planet.diameter) * 0.5;
-	  var smallerR = Math.min(star.diameter, planet.diameter) * 0.5;
-	  var ratio = Math.max(0, Math.min(1, 1 - (d - (biggerR - smallerR)) / (2 * smallerR)));
-	  return 1 - ratio * Math.min(1, planetArea / starArea);
-	}
-
-/***/ },
+/* 1 */,
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -9994,119 +9857,7 @@
 
 
 /***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _jquery = __webpack_require__(2);
-
-	var _jquery2 = _interopRequireDefault(_jquery);
-
-	var _canvasView = __webpack_require__(5);
-
-	var _canvasView2 = _interopRequireDefault(_canvasView);
-
-	var _utils = __webpack_require__(6);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var MOVE_CURSOR = 'move';
-	var DEFAULT_CURSOR = 'default';
-	var MODEL_HEIGHT = 10;
-
-	var _class = (function (_CanvasView) {
-	  _inherits(_class, _CanvasView);
-
-	  function _class(parentEl) {
-	    _classCallCheck(this, _class);
-
-	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(_class).call(this, parentEl, null, MODEL_HEIGHT));
-
-	    _this.setupInteraction();
-	    return _this;
-	  }
-
-	  _createClass(_class, [{
-	    key: 'render',
-	    value: function render(star, planet) {
-	      this.ctx.fillStyle = 'black';
-	      this.ctx.fillRect(0, 0, this.width, this.height);
-
-	      this.renderCircle(star, '#ffff00', '#aaaa00', 'star');
-	      this.renderCircle(planet, '#004A82', '#0076D0', 'planet');
-
-	      this.star = star;
-	      this.planet = planet;
-	    }
-	  }, {
-	    key: 'renderCircle',
-	    value: function renderCircle(data, fillColor, strokeColor, title) {
-	      this.ctx.beginPath();
-	      this.ctx.arc(this.sx(data.x), this.sy(data.y), this.s(data.diameter * 0.5), 0, 2 * Math.PI, false);
-	      this.ctx.fillStyle = fillColor;
-	      this.ctx.fill();
-	      this.ctx.lineWidth = this.s(data.diameter * 0.01);
-	      this.ctx.strokeStyle = strokeColor;
-	      this.ctx.stroke();
-	      this.ctx.font = this.s(0.5) + "px Arial";
-	      this.ctx.fillText(title, this.sx(data.x + 0.52 * data.diameter), this.sy(data.y - 0.45 * data.diameter));
-	    }
-	  }, {
-	    key: 'setupInteraction',
-	    value: function setupInteraction() {
-	      var _this2 = this;
-
-	      var $canvas = this.$canvas;
-	      var dragging = false;
-	      var offset = {};
-	      $canvas.on('mousemove touchmove', function (evt) {
-	        var p = (0, _utils.mousePosHD)(evt, $canvas);
-	        _this2.pInv(p);
-	        var d = (0, _utils.distObj)(p, _this2.planet);
-	        _this2.setCursor(dragging || d < interactionRadius(_this2.planet) ? MOVE_CURSOR : DEFAULT_CURSOR);
-	        if (dragging) {
-	          _this2.dispatch.emit('planet.change', { x: p.x + offset.x, y: p.y + offset.y });
-	        }
-	      });
-	      $canvas.on('mousedown touchstart', function (evt) {
-	        var p = (0, _utils.mousePosHD)(evt, $canvas);
-	        _this2.pInv(p);
-	        var d = (0, _utils.distObj)(p, _this2.planet);
-	        if (d < interactionRadius(_this2.planet)) {
-	          offset.x = _this2.planet.x - p.x;
-	          offset.y = _this2.planet.y - p.y;
-	          dragging = true;
-	        }
-	      });
-	      $canvas.on('mouseup touchend touchcancel', function () {
-	        dragging = false;
-	      });
-	    }
-	  }]);
-
-	  return _class;
-	})(_canvasView2.default);
-
-	exports.default = _class;
-
-	function interactionRadius(planet) {
-	  return Math.max(0.4, planet.diameter * 0.5);
-	}
-
-/***/ },
+/* 4 */,
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -10332,58 +10083,7 @@
 	}
 
 /***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	exports.default = function (app) {
-	  var phone = _iframePhone2.default.getIFrameEndpoint();
-
-	  app.on('play', function () {
-	    phone.post('play.iframe-model');
-	  });
-	  app.on('stop', function () {
-	    phone.post('stop.iframe-model');
-	  });
-	  app.on('tick', function (newState) {
-	    phone.post('tick', { outputs: getLabOutputs(newState) });
-	  });
-
-	  phone.addListener('play', function () {
-	    app.play();
-	  });
-	  phone.addListener('stop', function () {
-	    app.stop();
-	  });
-	  phone.addListener('set', function (content) {
-	    if (content.name === 'planet.diameter') {
-	      app.state.planet.diameter = content.value;
-	    }
-	  });
-
-	  phone.initialize();
-	  phone.post('outputs', getLabOutputs(app.state));
-	};
-
-	var _iframePhone = __webpack_require__(8);
-
-	var _iframePhone2 = _interopRequireDefault(_iframePhone);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function getLabOutputs(state) {
-	  return {
-	    time: state.time,
-	    lightIntensity: state.lightIntensity
-	  };
-	}
-
-/***/ },
+/* 7 */,
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -10872,6 +10572,386 @@
 	    this.disconnect = disconnect.bind(this);
 	};
 
+
+/***/ },
+/* 13 */,
+/* 14 */,
+/* 15 */,
+/* 16 */,
+/* 17 */,
+/* 18 */,
+/* 19 */,
+/* 20 */,
+/* 21 */,
+/* 22 */,
+/* 23 */,
+/* 24 */,
+/* 25 */,
+/* 26 */,
+/* 27 */,
+/* 28 */,
+/* 29 */,
+/* 30 */,
+/* 31 */,
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _jquery = __webpack_require__(2);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
+	var _eventemitter = __webpack_require__(3);
+
+	var _eventemitter2 = _interopRequireDefault(_eventemitter);
+
+	var _view = __webpack_require__(33);
+
+	var _view2 = _interopRequireDefault(_view);
+
+	var _utils = __webpack_require__(6);
+
+	var _engine = __webpack_require__(35);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var NOTIFY_TICK_INTERVAL = 10;
+	var TIMESTEP = 0.001;
+
+	var DEF_STATE = {
+	  time: 0,
+	  timestep: 0.001,
+	  star: {
+	    x: 0,
+	    y: 0,
+	    vx: 0,
+	    diameter: 4
+	  },
+	  wave: {
+	    x: [],
+	    y: [],
+	    starVx: []
+	  },
+	  starTelescopeVelocity: 0 // output!
+	};
+
+	var _class = (function () {
+	  function _class(parentEl) {
+	    _classCallCheck(this, _class);
+
+	    this.state = _jquery2.default.extend(true, {}, DEF_STATE);
+
+	    this.view = new _view2.default(parentEl, _engine.MODEL_WIDTH);
+
+	    this.tick = 0;
+	    this.isPlaying = false;
+
+	    this.dispatch = new _eventemitter2.default();
+
+	    this._rafCallback = this._rafCallback.bind(this);
+	    this._rafCallback();
+	  }
+
+	  _createClass(_class, [{
+	    key: 'calculateOutputs',
+	    value: function calculateOutputs() {
+	      this.state.starTelescopeVelocity = starTelescopeVelocity(this.state.star);
+	    }
+	  }, {
+	    key: 'on',
+	    value: function on() {
+	      // Delegate #on to EventEmitter object.
+	      this.dispatch.on.apply(this.dispatch, arguments);
+	    }
+	  }, {
+	    key: 'play',
+	    value: function play() {
+	      this.isPlaying = true;
+	      this.dispatch.emit('play');
+	    }
+	  }, {
+	    key: 'stop',
+	    value: function stop() {
+	      this.isPlaying = false;
+	      this.dispatch.emit('stop');
+	    }
+	  }, {
+	    key: 'resize',
+	    value: function resize() {
+	      this.view.resize();
+	    }
+	  }, {
+	    key: 'setState',
+	    value: function setState(newState) {
+	      deepExtend(this.state, newState);
+	    }
+	  }, {
+	    key: '_rafCallback',
+	    value: function _rafCallback() {
+	      if (this.isPlaying) {
+	        this.tick += 1;
+	        (0, _engine.tick)(this.state);
+	        if (this.tick % NOTIFY_TICK_INTERVAL === 0) {
+	          this.dispatch.emit('tick', this.state);
+	        }
+	      }
+	      this.view.render(this.state.star, this.state.wave);
+	      this._rafID = requestAnimationFrame(this._rafCallback);
+	    }
+	  }]);
+
+	  return _class;
+	})();
+
+	exports.default = _class;
+
+/***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _canvasView = __webpack_require__(5);
+
+	var _canvasView2 = _interopRequireDefault(_canvasView);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var STAR_COLOR = '#eeee33';
+	var TELESCOPE_W = 3;
+	var TELESCOPE_H = 4;
+
+	var _class = (function (_CanvasView) {
+	  _inherits(_class, _CanvasView);
+
+	  function _class(parentEl, modelWidth) {
+	    _classCallCheck(this, _class);
+
+	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(_class).call(this, parentEl, modelWidth));
+
+	    _this.telescopeX = -modelWidth * 0.5;
+	    return _this;
+	  }
+
+	  _createClass(_class, [{
+	    key: 'render',
+	    value: function render(star, wave) {
+	      this.ctx.fillStyle = 'black';
+	      this.ctx.fillRect(0, 0, this.width, this.height);
+
+	      this.renderWave(wave.x, wave.y, wave.starVx);
+	      this.renderCircle(star, STAR_COLOR, '#aaaa00');
+	      this.renderTelescope();
+	    }
+	  }, {
+	    key: 'renderCircle',
+	    value: function renderCircle(data, fillColor, strokeColor, title) {
+	      this.ctx.beginPath();
+	      this.ctx.arc(this.sx(data.x), this.sy(data.y), this.s(data.diameter * 0.5), 0, 2 * Math.PI, false);
+	      this.ctx.fillStyle = fillColor;
+	      this.ctx.fill();
+	      this.ctx.lineWidth = this.s(data.diameter * 0.01);
+	      this.ctx.strokeStyle = strokeColor;
+	      this.ctx.stroke();
+	    }
+	  }, {
+	    key: 'renderWave',
+	    value: function renderWave(x, y, starVx) {
+	      var waveLen = x.length;
+	      this.ctx.lineWidth = this.s(0.15);
+	      this.ctx.beginPath();
+	      this.ctx.moveTo(this.sx(x[0]), this.sy(y[0]));
+	      this.ctx.strokeStyle = waveColor(starVx[0]);
+	      for (var i = 1; i < waveLen; i++) {
+	        this.ctx.lineTo(this.sx(x[i]), this.sy(y[i]));
+	        if (waveColor(starVx[i]) !== waveColor(starVx[i - 1])) {
+	          this.ctx.stroke();
+	          this.ctx.beginPath();
+	          this.ctx.moveTo(this.sx(x[i]), this.sy(y[i]));
+	          this.ctx.strokeStyle = waveColor(starVx[i]);
+	        }
+	      }
+	      this.ctx.stroke();
+	    }
+	  }, {
+	    key: 'renderTelescope',
+	    value: function renderTelescope() {
+	      var telGrad1 = this.ctx.createLinearGradient(0, this.sy(TELESCOPE_H * 0.4), 0, this.sy(-TELESCOPE_H * 0.4));
+	      telGrad1.addColorStop(0, '#333');
+	      telGrad1.addColorStop(0.2, '#eee');
+	      telGrad1.addColorStop(1, '#333');
+	      this.ctx.fillStyle = telGrad1;
+	      this.ctx.fillRect(this.sx(this.telescopeX), this.sy(TELESCOPE_H * 0.4), this.s(TELESCOPE_W * 0.5), this.s(TELESCOPE_H * 0.8));
+	      this.ctx.strokeStyle = '#333';
+	      this.ctx.lineWidth = this.s(0.05);
+	      this.ctx.strokeRect(this.sx(this.telescopeX), this.sy(TELESCOPE_H * 0.4), this.s(TELESCOPE_W * 0.5), this.s(TELESCOPE_H * 0.8));
+
+	      var telGrad2 = this.ctx.createLinearGradient(0, this.sy(TELESCOPE_H * 0.5), 0, this.sy(-TELESCOPE_H * 0.5));
+	      telGrad2.addColorStop(0, '#A59240');
+	      telGrad2.addColorStop(0.2, '#eee');
+	      telGrad2.addColorStop(1, '#947A19');
+	      this.ctx.fillStyle = telGrad2;
+	      this.ctx.fillRect(this.sx(this.telescopeX + TELESCOPE_W * 0.5), this.sy(TELESCOPE_H * 0.5), this.s(TELESCOPE_W * 0.5), this.s(TELESCOPE_H));
+	      this.ctx.strokeStyle = '#816813';
+	      this.ctx.lineWidth = this.s(0.05);
+	      this.ctx.strokeRect(this.sx(this.telescopeX + TELESCOPE_W * 0.5), this.sy(TELESCOPE_H * 0.5), this.s(TELESCOPE_W * 0.5), this.s(TELESCOPE_H));
+	    }
+	  }]);
+
+	  return _class;
+	})(_canvasView2.default);
+
+	exports.default = _class;
+
+	function waveColor(starVx) {
+	  if (starVx < 0) {
+	    return '#03B3EC';
+	  } else if (starVx > 0) {
+	    return '#E80000';
+	  } else {
+	    return STAR_COLOR;
+	  }
+	}
+
+/***/ },
+/* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	exports.default = function (app) {
+	  var phone = _iframePhone2.default.getIFrameEndpoint();
+
+	  app.on('play', function () {
+	    phone.post('play.iframe-model');
+	  });
+	  app.on('stop', function () {
+	    phone.post('stop.iframe-model');
+	  });
+	  app.on('tick', function (newState) {
+	    phone.post('tick', { outputs: getLabOutputs(newState) });
+	  });
+	  phone.addListener('set', function (content) {
+	    if (content.name === 'star.vx') {
+	      app.state.star.vx = content.value;
+	    }
+	  });
+
+	  phone.addListener('play', function () {
+	    app.play();
+	  });
+	  phone.addListener('stop', function () {
+	    app.stop();
+	  });
+
+	  phone.initialize();
+	  phone.post('outputs', getLabOutputs(app.state));
+	};
+
+	var _iframePhone = __webpack_require__(8);
+
+	var _iframePhone2 = _interopRequireDefault(_iframePhone);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function getLabOutputs(state) {
+	  return {
+	    time: state.time,
+	    starTelescopeVelocity: state.starTelescopeVelocity
+	  };
+	}
+
+/***/ },
+/* 35 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.tick = tick;
+	var MODEL_WIDTH = exports.MODEL_WIDTH = 30;
+	var TELESCOPE_WIDTH = 3;
+	var MIN_X = -MODEL_WIDTH * 0.5 + TELESCOPE_WIDTH;
+	var MAX_X = MODEL_WIDTH * 0.5;
+	var TIME_MULT = 200;
+	var WAVE_VELOCITY = -100;
+
+	function tick(state) {
+	  // Limit star VX in some cases.
+	  var starVx = Math.max(state.star.vx, WAVE_VELOCITY * 0.7);
+	  if (state.star.vx < 0 && starAtMinX(state.star) || state.star.vx > 0 && starAtMaxX(state.star)) {
+	    starVx = 0;
+	  }
+
+	  // Calculate new wave point. Y is within the planet Y coord +/- radius, X is equal to the planet X coord.
+	  state.wave.y.unshift(Math.sin(state.time * TIME_MULT) * state.star.diameter * 0.3);
+	  state.wave.x.unshift(state.star.x);
+	  state.wave.starVx.unshift(starVx);
+
+	  moveStar(state.star, starVx, state.timestep);
+	  var newStarVx = moveWave(state.wave, state.timestep);
+	  if (newStarVx !== null) {
+	    state.starTelescopeVelocity = newStarVx;
+	  }
+
+	  state.time += state.timestep;
+	}
+
+	function moveStar(star, vx, dt) {
+	  star.x += vx * dt;
+	}
+
+	function starAtMinX(star) {
+	  return star.x <= MIN_X + star.diameter * 0.5 + 0.5; // add little margin (0.5) so wave is always visible
+	}
+
+	function starAtMaxX(star) {
+	  return star.x >= MAX_X - star.diameter * 0.5;
+	}
+
+	// Returns velocity of the removed photon (absorbed by telescope) or null.
+	function moveWave(wave, dt) {
+	  var x = wave.x;
+	  var waveLen = x.length;
+	  for (var i = 0; i < waveLen; i++) {
+	    x[i] += WAVE_VELOCITY * dt;
+	    if (x[i] < MIN_X || x[i] > MAX_X) {
+	      var starTelescopeVelocity = wave.starVx[i];
+	      wave.x.length = i;
+	      wave.y.length = i;
+	      wave.starVx.length = i;
+	      return starTelescopeVelocity;
+	    }
+	  }
+	  return null;
+	}
 
 /***/ }
 /******/ ]);

@@ -1,77 +1,15 @@
 import $ from 'jquery';
-import EventEmitter from 'eventemitter2';
-import {distObj, mousePos} from '../common/utils.js';
+import CanvasView from '../common/canvas-view.js';
+import {distObj, mousePosHD} from '../common/utils.js';
 
 const MOVE_CURSOR = 'move';
 const DEFAULT_CURSOR = 'default';
-const HEIGHT = 10;
+const MODEL_HEIGHT = 10;
 
-export default class {
+export default class extends CanvasView {
   constructor(parentEl) {
-    this.$canvas = $('<canvas>');
-    this.$canvas.appendTo(parentEl);
-    this.ctx = this.$canvas[0].getContext('2d');
-
-    this.dispatch = new EventEmitter();
-
-    this.resize();
+    super(parentEl, null, MODEL_HEIGHT);
     this.setupInteraction();
-  }
-
-  setProps(props) {
-  }
-
-  resize() {
-    this.width = this.$canvas.parent().width() * window.devicePixelRatio;
-    this.height = this.$canvas.parent().height() * window.devicePixelRatio;
-    this.scaleFactor = this.height / HEIGHT;
-    this.$canvas.attr({
-      width: this.width,
-      height: this.height
-    });
-    this.$canvas.css({
-      width: this.width / window.devicePixelRatio,
-      height: this.height / window.devicePixelRatio
-    });
-  }
-
-  s(val) {
-    return val * this.scaleFactor;
-  }
-
-  sInv(val) {
-    return val / this.scaleFactor;
-  }
-
-  sx(x) {
-    return x * this.scaleFactor + this.width * 0.5;
-  }
-
-  sxInv(x) {
-    return (x - this.width * 0.5) / this.scaleFactor;
-  }
-
-  sy(y) {
-    return this.height - (y * this.scaleFactor + this.height * 0.5);
-  }
-
-  syInv(y) {
-    return (this.height - y - this.height * 0.5) / this.scaleFactor;
-  }
-
-  pInv(p) {
-    p.x = this.sxInv(p.x);
-    p.y = this.syInv(p.y);
-    return p;
-  }
-
-  setCursor(v) {
-    this.$canvas.css('cursor', v);
-  }
-
-  // Delegate #on to EventEmitter object.
-  on() {
-    this.dispatch.on.apply(this.dispatch, arguments);
   }
 
   render(star, planet) {
@@ -84,7 +22,7 @@ export default class {
     this.star = star;
     this.planet = planet;
   }
-  
+
   renderCircle(data, fillColor, strokeColor, title) {
     this.ctx.beginPath();
     this.ctx.arc(this.sx(data.x), this.sy(data.y), this.s(data.diameter * 0.5), 0, 2 * Math.PI, false);
@@ -124,13 +62,6 @@ export default class {
       dragging = false;
     });
   }
-}
-
-function mousePosHD(evt, target) {
-  let p = mousePos(evt, target);
-  p.x *= window.devicePixelRatio;
-  p.y *= window.devicePixelRatio;
-  return p;
 }
 
 function interactionRadius(planet) {

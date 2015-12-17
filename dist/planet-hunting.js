@@ -46,29 +46,19 @@
 
 	'use strict';
 
-	var _app = __webpack_require__(11);
+	var _app = __webpack_require__(13);
 
 	var _app2 = _interopRequireDefault(_app);
 
-	var _labIntegration = __webpack_require__(29);
+	var _labIntegration = __webpack_require__(31);
 
 	var _labIntegration2 = _interopRequireDefault(_labIntegration);
 
+	var _utils = __webpack_require__(6);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var container = document.getElementById('app');
-
-	window.app = new _app2.default(container);
-	(0, _labIntegration2.default)(window.app);
-
-	window.onresize = resizeAppToWindow;
-	resizeAppToWindow();
-
-	function resizeAppToWindow() {
-	  container.style.width = window.innerWidth + "px";
-	  container.style.height = window.innerHeight + "px";
-	  window.app.resize();
-	}
+	(0, _utils.stdAppInitialization)(_app2.default, _labIntegration2.default);
 
 /***/ },
 /* 1 */,
@@ -9872,29 +9862,97 @@
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.dist = dist;
+	exports.distObj = distObj;
+	exports.mousePos = mousePos;
+	exports.mousePosHD = mousePosHD;
+	exports.stdAppInitialization = stdAppInitialization;
+
+	var _jquery = __webpack_require__(2);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function dist(x1, y1, z1, x2, y2, z2) {
+	  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
+	}
+
+	function distObj(a, b) {
+	  return dist(a.x, a.y, a.z || 0, b.x, b.y, b.z || 0);
+	}
+
+	// Mouse (or touch) position in pixels.
+	function mousePos(event, targetElement) {
+	  var $targetElement = (0, _jquery2.default)(targetElement);
+	  var parentX = $targetElement.offset().left;
+	  var parentY = $targetElement.offset().top;
+	  if (event.originalEvent.touches) {
+	    event = event.originalEvent.touches[0];
+	  }
+	  return { x: event.pageX - parentX, y: event.pageY - parentY };
+	}
+
+	// Mouse (or touch) position in pixels, but it takes into account
+	// device pixel ratio (e.g. Retina display).
+	function mousePosHD(evt, target) {
+	  var p = mousePos(evt, target);
+	  p.x *= window.devicePixelRatio;
+	  p.y *= window.devicePixelRatio;
+	  return p;
+	}
+
+	function stdAppInitialization(App, labIntegration) {
+	  var containerID = arguments.length <= 2 || arguments[2] === undefined ? 'app' : arguments[2];
+
+	  var container = document.getElementById(containerID);
+
+	  window.app = new App(container);
+	  labIntegration(window.app);
+
+	  window.onresize = resizeAppToWindow;
+	  resizeAppToWindow();
+
+	  function resizeAppToWindow() {
+	    container.style.width = window.innerWidth + "px";
+	    container.style.height = window.innerHeight + "px";
+	    window.app.resize();
+	  }
+	}
+
+/***/ },
+/* 7 */,
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
 	module.exports = {
 	  /**
 	   * Allows to communicate with an iframe.
 	   */
-	  ParentEndpoint:  __webpack_require__(7),
+	  ParentEndpoint:  __webpack_require__(9),
 	  /**
 	   * Allows to communicate with a parent page.
 	   * IFrameEndpoint is a singleton, as iframe can't have multiple parents anyway.
 	   */
-	  getIFrameEndpoint: __webpack_require__(9),
-	  structuredClone: __webpack_require__(8),
+	  getIFrameEndpoint: __webpack_require__(11),
+	  structuredClone: __webpack_require__(10),
 
 	  // TODO: May be misnamed
-	  IframePhoneRpcEndpoint: __webpack_require__(10)
+	  IframePhoneRpcEndpoint: __webpack_require__(12)
 
 	};
 
 
 /***/ },
-/* 7 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var structuredClone = __webpack_require__(8);
+	var structuredClone = __webpack_require__(10);
 
 	/**
 	  Call as:
@@ -10068,7 +10126,7 @@
 
 
 /***/ },
-/* 8 */
+/* 10 */
 /***/ function(module, exports) {
 
 	var featureSupported = false;
@@ -10110,10 +10168,10 @@
 
 
 /***/ },
-/* 9 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var structuredClone = __webpack_require__(8);
+	var structuredClone = __webpack_require__(10);
 	var HELLO_INTERVAL_LENGTH = 200;
 	var HELLO_TIMEOUT_LENGTH = 60000;
 
@@ -10263,13 +10321,13 @@
 	};
 
 /***/ },
-/* 10 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var ParentEndpoint = __webpack_require__(7);
-	var getIFrameEndpoint = __webpack_require__(9);
+	var ParentEndpoint = __webpack_require__(9);
+	var getIFrameEndpoint = __webpack_require__(11);
 
 	// Not a real UUID as there's an RFC for that (needed for proper distributed computing).
 	// But in this fairly parochial situation, we just need to be fairly sure to avoid repeats.
@@ -10359,7 +10417,7 @@
 
 
 /***/ },
-/* 11 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10374,25 +10432,25 @@
 
 	var _eventemitter2 = _interopRequireDefault(_eventemitter);
 
-	var _utils = __webpack_require__(12);
+	var _utils = __webpack_require__(14);
 
-	var _physics = __webpack_require__(13);
+	var _physics = __webpack_require__(15);
 
-	var _engine = __webpack_require__(15);
+	var _engine = __webpack_require__(17);
 
 	var engine = _interopRequireWildcard(_engine);
 
-	var _view = __webpack_require__(16);
+	var _view = __webpack_require__(18);
 
 	var _view2 = _interopRequireDefault(_view);
 
-	var _presets = __webpack_require__(27);
+	var _presets = __webpack_require__(29);
 
 	var _presets2 = _interopRequireDefault(_presets);
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
-	var _analyzeHabitability2 = __webpack_require__(28);
+	var _analyzeHabitability2 = __webpack_require__(30);
 
 	var _analyzeHabitability3 = _interopRequireDefault(_analyzeHabitability2);
 
@@ -10560,7 +10618,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 12 */
+/* 14 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -10641,7 +10699,7 @@
 	}
 
 /***/ },
-/* 13 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10658,9 +10716,9 @@
 	exports.occultation = occultation;
 	exports.planetMass = planetMass;
 
-	var _utils = __webpack_require__(30);
+	var _utils = __webpack_require__(6);
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	var DEG_2_RAD = Math.PI / 180;
 	// The universal gravitational constant in AU, years, and earth-mass units.
@@ -10778,7 +10836,7 @@
 	}
 
 /***/ },
-/* 14 */
+/* 16 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -10796,7 +10854,7 @@
 	var SOLAR_MASS = exports.SOLAR_MASS = SOLAR_MASS_KG / EARTH_MASS_KG; // [ earth masses ]
 
 /***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10807,9 +10865,9 @@
 	exports.tick = tick;
 	exports.calculateOutputs = calculateOutputs;
 
-	var _utils = __webpack_require__(12);
+	var _utils = __webpack_require__(14);
 
-	var _physics = __webpack_require__(13);
+	var _physics = __webpack_require__(15);
 
 	var MAX_TIMESTEP = 0.005;
 
@@ -10831,7 +10889,7 @@
 	}
 
 /***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -10850,35 +10908,35 @@
 
 	var _eventemitter2 = _interopRequireDefault(_eventemitter);
 
-	var _star = __webpack_require__(17);
+	var _star = __webpack_require__(19);
 
 	var _star2 = _interopRequireDefault(_star);
 
-	var _planet = __webpack_require__(18);
+	var _planet = __webpack_require__(20);
 
 	var _planet2 = _interopRequireDefault(_planet);
 
-	var _grid = __webpack_require__(20);
+	var _grid = __webpack_require__(22);
 
 	var _grid2 = _interopRequireDefault(_grid);
 
-	var _breadCrumbs = __webpack_require__(23);
+	var _breadCrumbs = __webpack_require__(25);
 
 	var _breadCrumbs2 = _interopRequireDefault(_breadCrumbs);
 
-	var _habitationZone = __webpack_require__(24);
+	var _habitationZone = __webpack_require__(26);
 
 	var _habitationZone2 = _interopRequireDefault(_habitationZone);
 
-	var _camera = __webpack_require__(25);
+	var _camera = __webpack_require__(27);
 
 	var _camera2 = _interopRequireDefault(_camera);
 
-	var _interactionsManager = __webpack_require__(26);
+	var _interactionsManager = __webpack_require__(28);
 
 	var _interactionsManager2 = _interopRequireDefault(_interactionsManager);
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -11100,7 +11158,7 @@
 	}
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11111,7 +11169,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11165,7 +11223,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11176,9 +11234,9 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
-	var _velocityArrow = __webpack_require__(19);
+	var _velocityArrow = __webpack_require__(21);
 
 	var _velocityArrow2 = _interopRequireDefault(_velocityArrow);
 
@@ -11254,7 +11312,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11266,7 +11324,7 @@
 	});
 	exports.VELOCITY_LEN_SCALE = undefined;
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11332,7 +11390,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11343,9 +11401,9 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
-	var _axis = __webpack_require__(21);
+	var _axis = __webpack_require__(23);
 
 	var _axis2 = _interopRequireDefault(_axis);
 
@@ -11413,7 +11471,7 @@
 	}
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11424,9 +11482,9 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
-	var _label = __webpack_require__(22);
+	var _label = __webpack_require__(24);
 
 	var _label2 = _interopRequireDefault(_label);
 
@@ -11503,7 +11561,7 @@
 	}
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11514,7 +11572,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11560,7 +11618,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 23 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11571,7 +11629,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11650,7 +11708,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 24 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11661,7 +11719,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11717,7 +11775,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 25 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11728,7 +11786,7 @@
 	  value: true
 	});
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -11900,7 +11958,7 @@
 	exports.default = _class;
 
 /***/ },
-/* 26 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -11915,7 +11973,7 @@
 
 	var _jquery2 = _interopRequireDefault(_jquery);
 
-	var _utils = __webpack_require__(30);
+	var _utils = __webpack_require__(6);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -12045,7 +12103,7 @@
 	}
 
 /***/ },
-/* 27 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -12054,11 +12112,11 @@
 	  value: true
 	});
 
-	var _physics = __webpack_require__(13);
+	var _physics = __webpack_require__(15);
 
-	var _utils = __webpack_require__(12);
+	var _utils = __webpack_require__(14);
 
-	var _constants = __webpack_require__(14);
+	var _constants = __webpack_require__(16);
 
 	exports.default = {
 	  // === PLANETS ===
@@ -12240,7 +12298,7 @@
 	};
 
 /***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -12250,9 +12308,9 @@
 	});
 	exports.default = analyzeHabitability;
 
-	var _utils = __webpack_require__(12);
+	var _utils = __webpack_require__(14);
 
-	var _physics = __webpack_require__(13);
+	var _physics = __webpack_require__(15);
 
 	var MARS_MASS = 0.107; // of Earth mass
 	var ANALYZE_TIMESTEP = 0.001;
@@ -12315,7 +12373,7 @@
 	}
 
 /***/ },
-/* 29 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -12381,13 +12439,13 @@
 	  phone.post('outputs', getLabStdOutputs(app.state));
 	};
 
-	var _utils = __webpack_require__(12);
+	var _utils = __webpack_require__(14);
 
-	var _iframePhone = __webpack_require__(6);
+	var _iframePhone = __webpack_require__(8);
 
 	var _iframePhone2 = _interopRequireDefault(_iframePhone);
 
-	var _physics = __webpack_require__(13);
+	var _physics = __webpack_require__(15);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -12461,44 +12519,6 @@
 	    flattenObject(value[key], prefix ? prefix + '.' + key : key, result);
 	  });
 	  return result;
-	}
-
-/***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.dist = dist;
-	exports.distObj = distObj;
-	exports.mousePos = mousePos;
-
-	var _jquery = __webpack_require__(2);
-
-	var _jquery2 = _interopRequireDefault(_jquery);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function dist(x1, y1, z1, x2, y2, z2) {
-	  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
-	}
-
-	function distObj(a, b) {
-	  return dist(a.x, a.y, a.z || 0, b.x, b.y, b.z || 0);
-	}
-
-	// Mouse (or touch) position in pixels.
-	function mousePos(event, targetElement) {
-	  var $targetElement = (0, _jquery2.default)(targetElement);
-	  var parentX = $targetElement.offset().left;
-	  var parentY = $targetElement.offset().top;
-	  if (event.originalEvent.touches) {
-	    event = event.originalEvent.touches[0];
-	  }
-	  return { x: event.pageX - parentX, y: event.pageY - parentY };
 	}
 
 /***/ }

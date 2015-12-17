@@ -2,7 +2,8 @@ var path = require('path');
 module.exports = {
   entry: {
     'planet-hunting': './js/planet-hunting/main.js',
-    'light-intensity': './js/light-intensity/main.js'
+    'light-intensity': './js/light-intensity/main.js',
+    'wave-generator': './js/wave-generator/main.js'
   },
   output: {
     path: path.join(__dirname, 'dist'),
