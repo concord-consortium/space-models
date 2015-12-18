@@ -89,7 +89,11 @@ export default class {
     this.dispatch.emit('stop');
   }
 
-  loadPreset(name) {
+  repaint() {
+    this.view.render();
+  }
+
+    loadPreset(name) {
     this.setState(presets[name]);
   }
 
@@ -120,7 +124,7 @@ export default class {
     // User can interact with the model only when it's paused.
     this.view.interactionEnabled = !this.isPlaying;
     this.view.setProps(this.state);
-    this.view.render();
+    this.repaint();
     this._rafID = requestAnimationFrame(this._rafCallback);
   }
 

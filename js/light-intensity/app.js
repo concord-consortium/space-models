@@ -60,6 +60,10 @@ export default class {
     this.dispatch.emit('stop');
   }
 
+  repaint() {
+    this.view.render(this.state.star, this.state.planet);
+  }
+
   resize() {
     this.view.resize();
   }
@@ -77,7 +81,7 @@ export default class {
         this.dispatch.emit('tick', this.state);
       }
     }
-    this.view.render(this.state.star, this.state.planet);
+    this.repaint();
     this._rafID = requestAnimationFrame(this._rafCallback);
   }
 }

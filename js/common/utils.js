@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import Shutterbug from 'shutterbug';
 
 export function dist(x1, y1, z1, x2, y2, z2) {
   return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
@@ -42,4 +43,16 @@ export function stdAppInitialization(App, labIntegration, containerID = 'app') {
     container.style.height = window.innerHeight + "px";
     window.app.resize();
   }
+
+  // Shutterbug support:
+  Shutterbug.enable('#app');
+  $(window).on('shutterbug-saycheese', function() {
+    // When Shutterbug wants to take a snapshot of the page, it first emits a 'shutterbug-
+    // saycheese' event. By default, any WebGL canvas will return a blank image when Shutterbug
+    // calls .toDataURL on it, However, if we ask Pixi to render to the canvas during the
+    // Shutterbug event loop (remember synthetic events such as 'shutterbug-saycheese' are
+    // handled synchronously) the rendered image will still be in the WebGL drawing buffer where
+    // Shutterbug can see it.
+    app.repaint();
+  });
 }
