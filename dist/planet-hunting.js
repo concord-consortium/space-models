@@ -10978,8 +10978,6 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
-
 	var DEF_STATE = {
 	  time: 0, // [ year ]
 	  timestep: 0.001, // [ year ]
@@ -11122,7 +11120,7 @@
 	        if (newState.planet.diameter === 0) _this2.view.clearBreadCrumbs();
 	      });
 	      this.on('tick', function (newState) {
-	        if (_this2.tick % BREAD_CRUMBS_INTERVAL === 0 && newState.planet.diameter > 0) {
+	        if (newState.planet.diameter > 0) {
 	          // Don't add bread crumbs when diameter === 0 what means that there is no planet.
 	          _this2.view.addBreadCrumb(newState.planet.x, newState.planet.y);
 	        }
@@ -12158,6 +12156,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+	var MIN_DISTANCE = 0.02;
 	var COUNT = 250;
 	var VERTEX_SHADER = '\n  attribute float alpha;\n  varying float vAlpha;\n  void main() {\n    vAlpha = alpha;\n    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);\n    gl_PointSize = 3.5;\n    gl_Position = projectionMatrix * mvPosition;\n  }';
 	var FRAGMENT_SHADER = '\n  uniform vec3 color;\n  varying float vAlpha;\n  void main() {\n    gl_FragColor = vec4(color, vAlpha);\n  }';
@@ -12187,6 +12186,11 @@
 	    key: 'addBreadCrumb',
 	    value: function addBreadCrumb(x, y) {
 	      var vertices = this.points.geometry.attributes.position;
+
+	      var xDiff = x - vertices.array[(this.idx - 1) * 3] / _constants.SF;
+	      var yDiff = y - vertices.array[(this.idx - 1) * 3 + 1] / _constants.SF;
+	      if (Math.sqrt(xDiff * xDiff + yDiff * yDiff) < MIN_DISTANCE) return;
+
 	      vertices.array[this.idx * 3] = x * _constants.SF;
 	      vertices.array[this.idx * 3 + 1] = y * _constants.SF;
 	      vertices.needsUpdate = true;
@@ -12194,7 +12198,7 @@
 	      var alphas = this.points.geometry.attributes.alpha;
 	      for (var i = 0; i < this.count; i++) {
 	        var idx = this.idx - i >= 0 ? this.idx - i : this.idx - i + COUNT;
-	        alphas.array[idx] = 1 - i / COUNT;
+	        alphas.array[idx] = i === 0 ? 0 : 1 - i / COUNT;
 	      }
 	      alphas.needsUpdate = true;
 

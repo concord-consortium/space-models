@@ -7,8 +7,6 @@ import presets from './presets.js';
 import {SOLAR_MASS} from './constants.js';
 import analyzeHabitability from './analyze-habitability.js';
 
-const BREAD_CRUMBS_INTERVAL = 5; // add bread crumb every X ticks
-
 const DEF_STATE = {
   time: 0,             // [ year ]
   timestep: 0.001,      // [ year ]
@@ -133,7 +131,7 @@ export default class {
       if (newState.planet.diameter === 0) this.view.clearBreadCrumbs();
     });
     this.on('tick', (newState) => {
-      if (this.tick % BREAD_CRUMBS_INTERVAL === 0 && newState.planet.diameter > 0) {
+      if (newState.planet.diameter > 0) {
         // Don't add bread crumbs when diameter === 0 what means that there is no planet.
         this.view.addBreadCrumb(newState.planet.x, newState.planet.y);
       }

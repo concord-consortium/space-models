@@ -1,5 +1,6 @@
 import {SF, PLANET_RADIUS} from '../constants.js';
 
+const MIN_DISTANCE = 0.02;
 const COUNT = 250;
 const VERTEX_SHADER = `
   attribute float alpha;
@@ -46,6 +47,11 @@ export default class {
 
   addBreadCrumb(x, y) {
     let vertices = this.points.geometry.attributes.position;
+
+    let xDiff = x - vertices.array[(this.idx - 1) * 3] / SF;
+    let yDiff = y - vertices.array[(this.idx - 1) * 3 + 1] / SF;
+    if (Math.sqrt(xDiff * xDiff + yDiff * yDiff) < MIN_DISTANCE) return;
+
     vertices.array[this.idx * 3] = x * SF;
     vertices.array[this.idx * 3 + 1] = y * SF;
     vertices.needsUpdate = true;
@@ -53,7 +59,7 @@ export default class {
     let alphas = this.points.geometry.attributes.alpha;
     for (let i = 0; i < this.count; i++) {
       let idx = this.idx - i >= 0 ? this.idx - i : this.idx - i + COUNT;
-      alphas.array[idx] = 1 - i / COUNT;
+      alphas.array[idx] = i === 0 ? 0 : 1 - i / COUNT;
     }
     alphas.needsUpdate = true;
 
