@@ -1,4 +1,5 @@
 import {SF, PLANET_RADIUS} from '../constants.js';
+import interactionMesh from './interaction-mesh.js';
 
 export const VELOCITY_LEN_SCALE = SF * 0.05;
 const DEF_COLOR = 0x00ff00;
@@ -21,6 +22,9 @@ export default class {
     this.headGeometry = new THREE.CylinderGeometry(headRadius, 0, headHeight, 16);
     this.headMaterial = new THREE.MeshPhongMaterial({color: DEF_COLOR, emissive: DEF_EMISSIVE});
     this.headMesh = new THREE.Mesh(this.headGeometry, this.headMaterial);
+
+    this.interactionMesh = interactionMesh();
+    this.headMesh.add(this.interactionMesh);
 
     this.pivot = new THREE.Object3D();
     this.pivot.add(this.headMesh);

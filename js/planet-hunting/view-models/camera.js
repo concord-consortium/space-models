@@ -171,7 +171,7 @@ export default class {
     let distance = Math.sqrt(dx * dx + dy * dy);
 
     let zoomEnd = new THREE.Vector2(0, distance);
-    let zoomDelta = (new THREE.Vector2()).subVectors(this._zoomStart, zoomEnd);
+    let zoomDelta = (new THREE.Vector2()).subVectors(zoomEnd, this._zoomStart);
 
     this._zoom(zoomDelta.y, 2);
 

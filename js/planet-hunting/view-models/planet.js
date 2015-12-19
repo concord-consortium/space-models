@@ -1,5 +1,6 @@
 import {SF, PLANET_RADIUS} from '../constants.js';
 import VelocityArrow from './velocity-arrow.js';
+import interactionMesh from './interaction-mesh.js';
 import {VELOCITY_LEN_SCALE} from './velocity-arrow.js';
 
 const DEF_COLOR = 0x1286CD;
@@ -12,6 +13,9 @@ export default class {
     this.geometry = new THREE.SphereGeometry(PLANET_RADIUS * SF, 64, 64);
     this.material = new THREE.MeshPhongMaterial({color: DEF_COLOR, emissive: DEF_EMISSIVE});
     this.mesh = new THREE.Mesh(this.geometry, this.material);
+
+    this.interactionMesh = interactionMesh();
+    this.mesh.add(this.interactionMesh);
 
     this.posObject = new THREE.Object3D();
     this.posObject.add(this.mesh);

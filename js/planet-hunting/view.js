@@ -144,7 +144,7 @@ export default class {
     // Earth dragging.
     this.interactionsManager.registerInteraction({
       test: () => {
-        return this.interactionsManager.isUserPointing(this.planet.mesh);
+        return this.interactionsManager.isUserPointing(this.planet.interactionMesh);
       },
       activationChangeHandler: (isActive) => {
         this.planet.setHighlighted(isActive);
@@ -158,7 +158,7 @@ export default class {
     // Velocity arrow(head) dragging.
     this.interactionsManager.registerInteraction({
       test: () => {
-        return this.interactionsManager.isUserPointing(this.planet.velocityArrow.headMesh);
+        return this.interactionsManager.isUserPointing(this.planet.velocityArrow.interactionMesh);
       },
       activationChangeHandler: (isActive) => {
         this.planet.velocityArrow.setHighlighted(isActive);

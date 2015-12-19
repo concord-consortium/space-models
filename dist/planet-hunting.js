@@ -11624,7 +11624,7 @@
 	      // Earth dragging.
 	      this.interactionsManager.registerInteraction({
 	        test: function test() {
-	          return _this2.interactionsManager.isUserPointing(_this2.planet.mesh);
+	          return _this2.interactionsManager.isUserPointing(_this2.planet.interactionMesh);
 	        },
 	        activationChangeHandler: function activationChangeHandler(isActive) {
 	          _this2.planet.setHighlighted(isActive);
@@ -11638,7 +11638,7 @@
 	      // Velocity arrow(head) dragging.
 	      this.interactionsManager.registerInteraction({
 	        test: function test() {
-	          return _this2.interactionsManager.isUserPointing(_this2.planet.velocityArrow.headMesh);
+	          return _this2.interactionsManager.isUserPointing(_this2.planet.velocityArrow.interactionMesh);
 	        },
 	        activationChangeHandler: function activationChangeHandler(isActive) {
 	          _this2.planet.velocityArrow.setHighlighted(isActive);
@@ -11762,6 +11762,10 @@
 
 	var _velocityArrow2 = _interopRequireDefault(_velocityArrow);
 
+	var _interactionMesh = __webpack_require__(40);
+
+	var _interactionMesh2 = _interopRequireDefault(_interactionMesh);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -11778,6 +11782,9 @@
 	    this.geometry = new THREE.SphereGeometry(_constants.PLANET_RADIUS * _constants.SF, 64, 64);
 	    this.material = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
 	    this.mesh = new THREE.Mesh(this.geometry, this.material);
+
+	    this.interactionMesh = (0, _interactionMesh2.default)();
+	    this.mesh.add(this.interactionMesh);
 
 	    this.posObject = new THREE.Object3D();
 	    this.posObject.add(this.mesh);
@@ -11849,6 +11856,12 @@
 
 	var _constants = __webpack_require__(20);
 
+	var _interactionMesh = __webpack_require__(40);
+
+	var _interactionMesh2 = _interopRequireDefault(_interactionMesh);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var VELOCITY_LEN_SCALE = exports.VELOCITY_LEN_SCALE = _constants.SF * 0.05;
@@ -11874,6 +11887,9 @@
 	    this.headGeometry = new THREE.CylinderGeometry(headRadius, 0, headHeight, 16);
 	    this.headMaterial = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
 	    this.headMesh = new THREE.Mesh(this.headGeometry, this.headMaterial);
+
+	    this.interactionMesh = (0, _interactionMesh2.default)();
+	    this.headMesh.add(this.interactionMesh);
 
 	    this.pivot = new THREE.Object3D();
 	    this.pivot.add(this.headMesh);
@@ -12449,7 +12465,7 @@
 	      var distance = Math.sqrt(dx * dx + dy * dy);
 
 	      var zoomEnd = new THREE.Vector2(0, distance);
-	      var zoomDelta = new THREE.Vector2().subVectors(this._zoomStart, zoomEnd);
+	      var zoomDelta = new THREE.Vector2().subVectors(zoomEnd, this._zoomStart);
 
 	      this._zoom(zoomDelta.y, 2);
 
@@ -13101,6 +13117,33 @@
 	  });
 	  return result;
 	}
+
+/***/ },
+/* 36 */,
+/* 37 */,
+/* 38 */,
+/* 39 */,
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	exports.default = function () {
+	  var interactionGeometry = new THREE.SphereGeometry(INTERACTION_RADIUS, 8, 8);
+	  var interactionMesh = new THREE.Mesh(interactionGeometry, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+	  // Render this object after all transparent objects.
+	  // Otherwise, we can see some rendering artifacts caused by other transparent objects (e.g. grid).
+	  interactionMesh.renderOrder = Infinity;
+	  return interactionMesh;
+	};
+
+	var _constants = __webpack_require__(20);
+
+	var INTERACTION_RADIUS = 0.15 * _constants.SF;
 
 /***/ }
 /******/ ]);
