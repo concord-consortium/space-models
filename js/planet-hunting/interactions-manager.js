@@ -76,7 +76,7 @@ export default class {
     let $elem = $(this.domElement);
     let namespace = `interaction-${idx}`;
     if (v) {
-      $elem.on(`mousedown.${namespace} touchstart.${namespace}`, () => {
+      $elem.on(`mousedown.${namespace} touchmove.${namespace}`, () => {
         int._started = true;
       });
       $elem.on(`mouseup.${namespace} touchend.${namespace} touchcancel.${namespace}`, () => {
@@ -88,12 +88,18 @@ export default class {
   }
 
   _followMousePosition() {
-    let onMouseMove = (event) => {
+    $(this.domElement).on('mousemove touchstart touchmove', (event) => {
       let pos = mousePosNormalized(event, this.domElement);
       this.mouse.x = pos.x;
       this.mouse.y = pos.y;
-    };
-    $(this.domElement).on('mousemove touchmove', onMouseMove);
+    });
+    $(this.domElement).on('touchend touchcancel', () => {
+      this.mouse.set(-2, -2);
+    });
+    $(this.domElement).on('touchstart touchmove touchend touchcancel', (event) => {
+      // Make sure that touch events don't emit additional, unnecessary mouse events.
+      event.preventDefault();
+    });
   }
 }
 

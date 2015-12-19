@@ -10085,6 +10085,7 @@
 	        if (dragging) {
 	          _this2.dispatch.emit('planet.change', { x: p.x + offset.x, y: p.y + offset.y });
 	        }
+	        evt.preventDefault();
 	      });
 	      $canvas.on('mousedown touchstart', function (evt) {
 	        var p = (0, _utils.mousePosHD)(evt, $canvas);

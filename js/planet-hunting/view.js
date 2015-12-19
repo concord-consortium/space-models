@@ -17,6 +17,7 @@ export default class {
     this.renderer = webglAvailable() ? new THREE.WebGLRenderer()
                                      : new THREE.CanvasRenderer();
     this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setClearColor(0x000000, 1);
     parentEl.appendChild(this.renderer.domElement);
 
     this._addHTMLDisplay(parentEl);

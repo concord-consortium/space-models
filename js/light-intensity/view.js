@@ -47,6 +47,7 @@ export default class extends CanvasView {
       if (dragging) {
         this.dispatch.emit('planet.change', {x: p.x + offset.x, y: p.y + offset.y});
       }
+      evt.preventDefault();
     });
     $canvas.on('mousedown touchstart', (evt) => {
       let p = mousePosHD(evt, $canvas);

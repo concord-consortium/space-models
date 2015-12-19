@@ -9,9 +9,10 @@ const HIGHLIGHT_EMISSIVE = 0xbb3333;
 
 export default class {
   constructor() {
-    let geometry = new THREE.SphereGeometry(PLANET_RADIUS * SF, 64, 64);
+    this.geometry = new THREE.SphereGeometry(PLANET_RADIUS * SF, 64, 64);
     this.material = new THREE.MeshPhongMaterial({color: DEF_COLOR, emissive: DEF_EMISSIVE});
-    this.mesh = new THREE.Mesh(geometry, this.material);
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
+
     this.posObject = new THREE.Object3D();
     this.posObject.add(this.mesh);
 

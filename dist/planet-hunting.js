@@ -11476,6 +11476,7 @@
 
 	    this.renderer = webglAvailable() ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
 	    this.renderer.setPixelRatio(window.devicePixelRatio);
+	    this.renderer.setClearColor(0x000000, 1);
 	    parentEl.appendChild(this.renderer.domElement);
 
 	    this._addHTMLDisplay(parentEl);
@@ -11776,9 +11777,10 @@
 	  function _class() {
 	    _classCallCheck(this, _class);
 
-	    var geometry = new THREE.SphereGeometry(_constants.PLANET_RADIUS * _constants.SF, 64, 64);
+	    this.geometry = new THREE.SphereGeometry(_constants.PLANET_RADIUS * _constants.SF, 64, 64);
 	    this.material = new THREE.MeshPhongMaterial({ color: DEF_COLOR, emissive: DEF_EMISSIVE });
-	    this.mesh = new THREE.Mesh(geometry, this.material);
+	    this.mesh = new THREE.Mesh(this.geometry, this.material);
+
 	    this.posObject = new THREE.Object3D();
 	    this.posObject.add(this.mesh);
 
@@ -12315,7 +12317,7 @@
 
 	var ROTATION_AXIS = new THREE.Vector3(1, 0, 0);
 	var ZERO_TILT_VEC = new THREE.Vector3(0, -1, 0);
-	var ZOOM_SPEED = 1.013;
+	var ZOOM_SPEED = 0.013;
 	var ZOOM_MIN = 0.25;
 	var ZOOM_MAX = 15;
 
@@ -12336,11 +12338,7 @@
 
 	    this.changeCallback = function () {/* noop */};
 
-	    // Use custom zooming which changes camera lens instead of camera position.
-	    this.controls.enableZoom = false;
-	    this.zoomLocked = false;
-	    canvas.addEventListener('mousewheel', this._onMouseWheel.bind(this), false);
-	    canvas.addEventListener('MozMousePixelScroll', this._onMouseWheel.bind(this), false);
+	    this._setupZoomSupport(canvas);
 	  }
 
 	  _createClass(_class, [{
@@ -12383,17 +12381,31 @@
 	    }
 	  }, {
 	    key: 'zoomIn',
-	    value: function zoomIn() {
-	      this.camera.zoom = Math.min(ZOOM_MAX, this.camera.zoom * ZOOM_SPEED);
+	    value: function zoomIn(zoomSpeedMult) {
+	      var zoomSpeed = 1 + ZOOM_SPEED * zoomSpeedMult;
+	      this.camera.zoom = Math.min(ZOOM_MAX, this.camera.zoom * zoomSpeed);
 	      this.camera.updateProjectionMatrix();
 	      this.changeCallback();
 	    }
 	  }, {
 	    key: 'zoomOut',
-	    value: function zoomOut() {
-	      this.camera.zoom = Math.max(ZOOM_MIN, this.camera.zoom / ZOOM_SPEED);
+	    value: function zoomOut(zoomSpeedMult) {
+	      var zoomSpeed = 1 + ZOOM_SPEED * zoomSpeedMult;
+	      this.camera.zoom = Math.max(ZOOM_MIN, this.camera.zoom / zoomSpeed);
 	      this.camera.updateProjectionMatrix();
 	      this.changeCallback();
+	    }
+	  }, {
+	    key: '_setupZoomSupport',
+	    value: function _setupZoomSupport(canvas) {
+	      // Use custom zooming which changes camera lens instead of camera position.
+	      this.controls.enableZoom = false;
+	      this.zoomLocked = false;
+	      this._zoomStart = new THREE.Vector2();
+	      canvas.addEventListener('mousewheel', this._onMouseWheel.bind(this), false);
+	      canvas.addEventListener('MozMousePixelScroll', this._onMouseWheel.bind(this), false);
+	      canvas.addEventListener('touchstart', this._onTouchStart.bind(this), false);
+	      canvas.addEventListener('touchmove', this._onTouchMove.bind(this), false);
 	    }
 	  }, {
 	    key: '_onMouseWheel',
@@ -12409,10 +12421,45 @@
 	        // Firefox
 	        delta = -event.detail;
 	      }
+	      this._zoom(delta);
+	    }
+	  }, {
+	    key: '_onTouchStart',
+	    value: function _onTouchStart(event) {
+	      if (this.zoomLocked) return;
+	      if (event.touches.length !== 2) return;
+
+	      var dx = event.touches[0].pageX - event.touches[1].pageX;
+	      var dy = event.touches[0].pageY - event.touches[1].pageY;
+	      var distance = Math.sqrt(dx * dx + dy * dy);
+	      this._zoomStart.set(0, distance);
+	    }
+	  }, {
+	    key: '_onTouchMove',
+	    value: function _onTouchMove(event) {
+	      if (this.zoomLocked) return;
+	      if (event.touches.length !== 2) return;
+
+	      var dx = event.touches[0].pageX - event.touches[1].pageX;
+	      var dy = event.touches[0].pageY - event.touches[1].pageY;
+	      var distance = Math.sqrt(dx * dx + dy * dy);
+
+	      var zoomEnd = new THREE.Vector2(0, distance);
+	      var zoomDelta = new THREE.Vector2().subVectors(this._zoomStart, zoomEnd);
+
+	      this._zoom(zoomDelta.y, 2);
+
+	      this._zoomStart.copy(zoomEnd);
+	    }
+	  }, {
+	    key: '_zoom',
+	    value: function _zoom(delta) {
+	      var zoomSpeedMult = arguments.length <= 1 || arguments[1] === undefined ? 1 : arguments[1];
+
 	      if (delta > 0) {
-	        this.zoomIn();
+	        this.zoomIn(zoomSpeedMult);
 	      } else if (delta < 0) {
-	        this.zoomOut();
+	        this.zoomOut(zoomSpeedMult);
 	      }
 	    }
 	  }, {
@@ -12424,7 +12471,7 @@
 	    key: 'tiltLocked',
 	    set: function set(v) {
 	      this._tiltLocked = v;
-	      this.controls.enableRotate = !v;
+	      this.controls.enableRotate = v ? false : !this._lockedForInteraction;
 	    },
 	    get: function get() {
 	      // We can't return !this.controls.enableRotate, as this value is also modified by #lockedForInteraction!
@@ -12436,6 +12483,7 @@
 	  }, {
 	    key: 'lockedForInteraction',
 	    set: function set(v) {
+	      this._lockedForInteraction = v;
 	      // We can't use #tiltLocked, as we want to preserver value of this property. This is only temporal lock.
 	      this.controls.enableRotate = v ? false : !this._tiltLocked;
 	      this.zoomLocked = v;
@@ -12585,7 +12633,7 @@
 	      var $elem = (0, _jquery2.default)(this.domElement);
 	      var namespace = 'interaction-' + idx;
 	      if (v) {
-	        $elem.on('mousedown.' + namespace + ' touchstart.' + namespace, function () {
+	        $elem.on('mousedown.' + namespace + ' touchmove.' + namespace, function () {
 	          int._started = true;
 	        });
 	        $elem.on('mouseup.' + namespace + ' touchend.' + namespace + ' touchcancel.' + namespace, function () {
@@ -12600,12 +12648,18 @@
 	    value: function _followMousePosition() {
 	      var _this = this;
 
-	      var onMouseMove = function onMouseMove(event) {
+	      (0, _jquery2.default)(this.domElement).on('mousemove touchstart touchmove', function (event) {
 	        var pos = mousePosNormalized(event, _this.domElement);
 	        _this.mouse.x = pos.x;
 	        _this.mouse.y = pos.y;
-	      };
-	      (0, _jquery2.default)(this.domElement).on('mousemove touchmove', onMouseMove);
+	      });
+	      (0, _jquery2.default)(this.domElement).on('touchend touchcancel', function () {
+	        _this.mouse.set(-2, -2);
+	      });
+	      (0, _jquery2.default)(this.domElement).on('touchstart touchmove touchend touchcancel', function (event) {
+	        // Make sure that touch events don't emit additional, unnecessary mouse events.
+	        event.preventDefault();
+	      });
 	    }
 	  }]);
 

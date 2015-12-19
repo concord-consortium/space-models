@@ -2,7 +2,7 @@ import {SF} from '../constants.js';
 
 const ROTATION_AXIS = new THREE.Vector3(1, 0, 0);
 const ZERO_TILT_VEC = new THREE.Vector3(0, -1, 0);
-const ZOOM_SPEED = 1.013;
+const ZOOM_SPEED = 0.013;
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 15;
 
@@ -21,11 +21,7 @@ export default class {
 
     this.changeCallback = function() { /* noop */ };
 
-    // Use custom zooming which changes camera lens instead of camera position.
-    this.controls.enableZoom = false;
-    this.zoomLocked = false;
-    canvas.addEventListener('mousewheel', this._onMouseWheel.bind(this), false);
-    canvas.addEventListener('MozMousePixelScroll', this._onMouseWheel.bind(this), false);
+    this._setupZoomSupport(canvas);
   }
 
   get position() {
@@ -34,7 +30,7 @@ export default class {
 
   set tiltLocked(v) {
     this._tiltLocked = v;
-    this.controls.enableRotate = !v;
+    this.controls.enableRotate = v ? false : !this._lockedForInteraction;
   }
 
   get tiltLocked() {
@@ -44,6 +40,7 @@ export default class {
 
   // It *temporarily* locks tilt and zoom change.
   set lockedForInteraction(v) {
+    this._lockedForInteraction = v;
     // We can't use #tiltLocked, as we want to preserver value of this property. This is only temporal lock.
     this.controls.enableRotate = v ? false : !this._tiltLocked;
     this.zoomLocked = v;
@@ -114,17 +111,31 @@ export default class {
     this.controls.update();
   }
 
-  zoomIn() {
-    this.camera.zoom = Math.min(ZOOM_MAX, this.camera.zoom * ZOOM_SPEED);
+  zoomIn(zoomSpeedMult) {
+    let zoomSpeed = 1 + ZOOM_SPEED * zoomSpeedMult;
+    this.camera.zoom = Math.min(ZOOM_MAX, this.camera.zoom * zoomSpeed);
     this.camera.updateProjectionMatrix();
     this.changeCallback();
   }
 
-  zoomOut() {
-    this.camera.zoom = Math.max(ZOOM_MIN, this.camera.zoom / ZOOM_SPEED);
+  zoomOut(zoomSpeedMult) {
+    let zoomSpeed = 1 + ZOOM_SPEED * zoomSpeedMult;
+    this.camera.zoom = Math.max(ZOOM_MIN, this.camera.zoom / zoomSpeed);
     this.camera.updateProjectionMatrix();
     this.changeCallback();
   }
+
+  _setupZoomSupport(canvas) {
+    // Use custom zooming which changes camera lens instead of camera position.
+    this.controls.enableZoom = false;
+    this.zoomLocked = false;
+    this._zoomStart = new THREE.Vector2();
+    canvas.addEventListener('mousewheel', this._onMouseWheel.bind(this), false);
+    canvas.addEventListener('MozMousePixelScroll', this._onMouseWheel.bind(this), false);
+    canvas.addEventListener('touchstart', this._onTouchStart.bind(this), false);
+    canvas.addEventListener('touchmove', this._onTouchMove.bind(this), false);
+  }
+
 
   _onMouseWheel(event) {
     if (this.zoomLocked) return;
@@ -138,10 +149,40 @@ export default class {
       // Firefox
       delta = -event.detail;
     }
+    this._zoom(delta);
+  }
+
+  _onTouchStart(event) {
+    if (this.zoomLocked) return;
+    if (event.touches.length !== 2) return;
+
+    let dx = event.touches[0].pageX - event.touches[1].pageX;
+    let dy = event.touches[0].pageY - event.touches[1].pageY;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    this._zoomStart.set(0, distance);
+  }
+
+  _onTouchMove(event) {
+    if (this.zoomLocked) return;
+    if (event.touches.length !== 2) return;
+
+    let dx = event.touches[0].pageX - event.touches[1].pageX;
+    let dy = event.touches[0].pageY - event.touches[1].pageY;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+
+    let zoomEnd = new THREE.Vector2(0, distance);
+    let zoomDelta = (new THREE.Vector2()).subVectors(this._zoomStart, zoomEnd);
+
+    this._zoom(zoomDelta.y, 2);
+
+    this._zoomStart.copy(zoomEnd);
+  }
+
+  _zoom(delta, zoomSpeedMult = 1) {
     if (delta > 0) {
-      this.zoomIn();
+      this.zoomIn(zoomSpeedMult);
     } else if (delta < 0) {
-      this.zoomOut();
+      this.zoomOut(zoomSpeedMult);
     }
   }
 }
