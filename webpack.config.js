@@ -16,7 +16,8 @@ module.exports = {
         exclude: /(node_modules|vendor)/,
         loader: 'babel',
         query: {
-          presets: ['es2015']
+          presets: ['es2015'],
+          plugins: ['transform-runtime']
         }
       }
     ]
